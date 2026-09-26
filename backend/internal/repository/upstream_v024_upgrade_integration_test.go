@@ -82,7 +82,7 @@ INSERT INTO settings (key,value) VALUES ('ops_runtime_log_config','{"level":"war
 		return value
 	}
 	queries := []string{
-		`SELECT jsonb_agg(to_jsonb(t) ORDER BY id)::text FROM users t`,
+		`SELECT jsonb_agg(to_jsonb(t) - 'federation_usage_watermark_seq' ORDER BY id)::text FROM users t`,
 		`SELECT jsonb_agg(to_jsonb(t) ORDER BY id)::text FROM accounts t`,
 		`SELECT jsonb_agg(to_jsonb(t) ORDER BY group_id)::text FROM account_groups t`,
 		`SELECT jsonb_agg(to_jsonb(t) ORDER BY id)::text FROM user_subscriptions t`,
@@ -111,6 +111,8 @@ INSERT INTO settings (key,value) VALUES ('ops_runtime_log_config','{"level":"war
 		    'poll_scheduled', next_poll_at IS NOT NULL)::text
 		FROM openai_oauth_weekly_reset_observations WHERE account_id=1`))
 	require.Equal(t, "0", snapshot(`SELECT reset_sequence::text FROM group_quota_follow_reset_events WHERE group_id=101`))
+	// The fork's federation watermark column starts at zero for upgraded users.
+	require.Equal(t, "0", snapshot(`SELECT federation_usage_watermark_seq::text FROM users WHERE id=1`))
 	require.JSONEq(t, groupsBefore, snapshot(`SELECT jsonb_agg(to_jsonb(t) - 'model_allowlist' ORDER BY id)::text FROM groups t`))
 	require.JSONEq(t, `{"enabled":true,"models":["GPT-5.6","claude-*"]}`, snapshot(`SELECT model_allowlist::text FROM groups WHERE id=101`))
 	require.JSONEq(t, `{"enabled":false,"models":[]}`, snapshot(`SELECT model_allowlist::text FROM groups WHERE id=102`))
