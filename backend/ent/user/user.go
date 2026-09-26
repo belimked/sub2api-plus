@@ -65,6 +65,8 @@ const (
 	FieldTotalRecharged = "total_recharged"
 	// FieldRpmLimit holds the string denoting the rpm_limit field in the database.
 	FieldRpmLimit = "rpm_limit"
+	// FieldFederationUsageWatermarkSeq holds the string denoting the federation_usage_watermark_seq field in the database.
+	FieldFederationUsageWatermarkSeq = "federation_usage_watermark_seq"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -221,6 +223,7 @@ var Columns = []string{
 	FieldBalanceNotifyExtraEmails,
 	FieldTotalRecharged,
 	FieldRpmLimit,
+	FieldFederationUsageWatermarkSeq,
 }
 
 var (
@@ -245,7 +248,7 @@ func ValidColumn(column string) bool {
 //
 //	import _ "github.com/LuckyKuang/sub2api-plus/ent/runtime"
 var (
-	Hooks        [1]ent.Hook
+	Hooks        [2]ent.Hook
 	Interceptors [1]ent.Interceptor
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
@@ -295,6 +298,8 @@ var (
 	DefaultTotalRecharged float64
 	// DefaultRpmLimit holds the default value on creation for the "rpm_limit" field.
 	DefaultRpmLimit int
+	// DefaultFederationUsageWatermarkSeq holds the default value on creation for the "federation_usage_watermark_seq" field.
+	DefaultFederationUsageWatermarkSeq int64
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -428,6 +433,11 @@ func ByTotalRecharged(opts ...sql.OrderTermOption) OrderOption {
 // ByRpmLimit orders the results by the rpm_limit field.
 func ByRpmLimit(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRpmLimit, opts...).ToFunc()
+}
+
+// ByFederationUsageWatermarkSeq orders the results by the federation_usage_watermark_seq field.
+func ByFederationUsageWatermarkSeq(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFederationUsageWatermarkSeq, opts...).ToFunc()
 }
 
 // ByAPIKeysCount orders the results by api_keys count.

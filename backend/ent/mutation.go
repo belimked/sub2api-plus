@@ -28,6 +28,8 @@ import (
 	"github.com/LuckyKuang/sub2api-plus/ent/channelmonitorrequesttemplate"
 	"github.com/LuckyKuang/sub2api-plus/ent/compositemodelroute"
 	"github.com/LuckyKuang/sub2api-plus/ent/errorpassthroughrule"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationoutbox"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationusagecursor"
 	"github.com/LuckyKuang/sub2api-plus/ent/group"
 	"github.com/LuckyKuang/sub2api-plus/ent/idempotencyrecord"
 	"github.com/LuckyKuang/sub2api-plus/ent/identityadoptiondecision"
@@ -80,6 +82,8 @@ const (
 	TypeChannelMonitorRequestTemplate = "ChannelMonitorRequestTemplate"
 	TypeCompositeModelRoute           = "CompositeModelRoute"
 	TypeErrorPassthroughRule          = "ErrorPassthroughRule"
+	TypeFederationOutbox              = "FederationOutbox"
+	TypeFederationUsageCursor         = "FederationUsageCursor"
 	TypeGroup                         = "Group"
 	TypeIdempotencyRecord             = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
@@ -22073,6 +22077,1655 @@ func (m *ErrorPassthroughRuleMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ErrorPassthroughRuleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ErrorPassthroughRule edge %s", name)
+}
+
+// FederationOutboxMutation represents an operation that mutates the FederationOutbox nodes in the graph.
+type FederationOutboxMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int64
+	created_at     *time.Time
+	updated_at     *time.Time
+	aggregate_type *string
+	aggregate_id   *string
+	event_type     *string
+	payload        *string
+	status         *string
+	attempts       *int
+	addattempts    *int
+	last_error     *string
+	next_retry_at  *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*FederationOutbox, error)
+	predicates     []predicate.FederationOutbox
+}
+
+var _ ent.Mutation = (*FederationOutboxMutation)(nil)
+
+// federationoutboxOption allows management of the mutation configuration using functional options.
+type federationoutboxOption func(*FederationOutboxMutation)
+
+// newFederationOutboxMutation creates new mutation for the FederationOutbox entity.
+func newFederationOutboxMutation(c config, op Op, opts ...federationoutboxOption) *FederationOutboxMutation {
+	m := &FederationOutboxMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFederationOutbox,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFederationOutboxID sets the ID field of the mutation.
+func withFederationOutboxID(id int64) federationoutboxOption {
+	return func(m *FederationOutboxMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FederationOutbox
+		)
+		m.oldValue = func(ctx context.Context) (*FederationOutbox, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FederationOutbox.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFederationOutbox sets the old FederationOutbox of the mutation.
+func withFederationOutbox(node *FederationOutbox) federationoutboxOption {
+	return func(m *FederationOutboxMutation) {
+		m.oldValue = func(context.Context) (*FederationOutbox, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FederationOutboxMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FederationOutboxMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FederationOutboxMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FederationOutboxMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FederationOutbox.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FederationOutboxMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FederationOutboxMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FederationOutboxMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *FederationOutboxMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *FederationOutboxMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *FederationOutboxMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetAggregateType sets the "aggregate_type" field.
+func (m *FederationOutboxMutation) SetAggregateType(s string) {
+	m.aggregate_type = &s
+}
+
+// AggregateType returns the value of the "aggregate_type" field in the mutation.
+func (m *FederationOutboxMutation) AggregateType() (r string, exists bool) {
+	v := m.aggregate_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAggregateType returns the old "aggregate_type" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldAggregateType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAggregateType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAggregateType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAggregateType: %w", err)
+	}
+	return oldValue.AggregateType, nil
+}
+
+// ResetAggregateType resets all changes to the "aggregate_type" field.
+func (m *FederationOutboxMutation) ResetAggregateType() {
+	m.aggregate_type = nil
+}
+
+// SetAggregateID sets the "aggregate_id" field.
+func (m *FederationOutboxMutation) SetAggregateID(s string) {
+	m.aggregate_id = &s
+}
+
+// AggregateID returns the value of the "aggregate_id" field in the mutation.
+func (m *FederationOutboxMutation) AggregateID() (r string, exists bool) {
+	v := m.aggregate_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAggregateID returns the old "aggregate_id" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldAggregateID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAggregateID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAggregateID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAggregateID: %w", err)
+	}
+	return oldValue.AggregateID, nil
+}
+
+// ResetAggregateID resets all changes to the "aggregate_id" field.
+func (m *FederationOutboxMutation) ResetAggregateID() {
+	m.aggregate_id = nil
+}
+
+// SetEventType sets the "event_type" field.
+func (m *FederationOutboxMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *FederationOutboxMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *FederationOutboxMutation) ResetEventType() {
+	m.event_type = nil
+}
+
+// SetPayload sets the "payload" field.
+func (m *FederationOutboxMutation) SetPayload(s string) {
+	m.payload = &s
+}
+
+// Payload returns the value of the "payload" field in the mutation.
+func (m *FederationOutboxMutation) Payload() (r string, exists bool) {
+	v := m.payload
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayload returns the old "payload" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldPayload(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayload is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayload requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayload: %w", err)
+	}
+	return oldValue.Payload, nil
+}
+
+// ResetPayload resets all changes to the "payload" field.
+func (m *FederationOutboxMutation) ResetPayload() {
+	m.payload = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *FederationOutboxMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *FederationOutboxMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *FederationOutboxMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *FederationOutboxMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *FederationOutboxMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *FederationOutboxMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *FederationOutboxMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *FederationOutboxMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetLastError sets the "last_error" field.
+func (m *FederationOutboxMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *FederationOutboxMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldLastError(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *FederationOutboxMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[federationoutbox.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *FederationOutboxMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[federationoutbox.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *FederationOutboxMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, federationoutbox.FieldLastError)
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (m *FederationOutboxMutation) SetNextRetryAt(t time.Time) {
+	m.next_retry_at = &t
+}
+
+// NextRetryAt returns the value of the "next_retry_at" field in the mutation.
+func (m *FederationOutboxMutation) NextRetryAt() (r time.Time, exists bool) {
+	v := m.next_retry_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextRetryAt returns the old "next_retry_at" field's value of the FederationOutbox entity.
+// If the FederationOutbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationOutboxMutation) OldNextRetryAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextRetryAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextRetryAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextRetryAt: %w", err)
+	}
+	return oldValue.NextRetryAt, nil
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (m *FederationOutboxMutation) ClearNextRetryAt() {
+	m.next_retry_at = nil
+	m.clearedFields[federationoutbox.FieldNextRetryAt] = struct{}{}
+}
+
+// NextRetryAtCleared returns if the "next_retry_at" field was cleared in this mutation.
+func (m *FederationOutboxMutation) NextRetryAtCleared() bool {
+	_, ok := m.clearedFields[federationoutbox.FieldNextRetryAt]
+	return ok
+}
+
+// ResetNextRetryAt resets all changes to the "next_retry_at" field.
+func (m *FederationOutboxMutation) ResetNextRetryAt() {
+	m.next_retry_at = nil
+	delete(m.clearedFields, federationoutbox.FieldNextRetryAt)
+}
+
+// Where appends a list predicates to the FederationOutboxMutation builder.
+func (m *FederationOutboxMutation) Where(ps ...predicate.FederationOutbox) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FederationOutboxMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FederationOutboxMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FederationOutbox, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FederationOutboxMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FederationOutboxMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FederationOutbox).
+func (m *FederationOutboxMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FederationOutboxMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, federationoutbox.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, federationoutbox.FieldUpdatedAt)
+	}
+	if m.aggregate_type != nil {
+		fields = append(fields, federationoutbox.FieldAggregateType)
+	}
+	if m.aggregate_id != nil {
+		fields = append(fields, federationoutbox.FieldAggregateID)
+	}
+	if m.event_type != nil {
+		fields = append(fields, federationoutbox.FieldEventType)
+	}
+	if m.payload != nil {
+		fields = append(fields, federationoutbox.FieldPayload)
+	}
+	if m.status != nil {
+		fields = append(fields, federationoutbox.FieldStatus)
+	}
+	if m.attempts != nil {
+		fields = append(fields, federationoutbox.FieldAttempts)
+	}
+	if m.last_error != nil {
+		fields = append(fields, federationoutbox.FieldLastError)
+	}
+	if m.next_retry_at != nil {
+		fields = append(fields, federationoutbox.FieldNextRetryAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FederationOutboxMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case federationoutbox.FieldCreatedAt:
+		return m.CreatedAt()
+	case federationoutbox.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case federationoutbox.FieldAggregateType:
+		return m.AggregateType()
+	case federationoutbox.FieldAggregateID:
+		return m.AggregateID()
+	case federationoutbox.FieldEventType:
+		return m.EventType()
+	case federationoutbox.FieldPayload:
+		return m.Payload()
+	case federationoutbox.FieldStatus:
+		return m.Status()
+	case federationoutbox.FieldAttempts:
+		return m.Attempts()
+	case federationoutbox.FieldLastError:
+		return m.LastError()
+	case federationoutbox.FieldNextRetryAt:
+		return m.NextRetryAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FederationOutboxMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case federationoutbox.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case federationoutbox.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case federationoutbox.FieldAggregateType:
+		return m.OldAggregateType(ctx)
+	case federationoutbox.FieldAggregateID:
+		return m.OldAggregateID(ctx)
+	case federationoutbox.FieldEventType:
+		return m.OldEventType(ctx)
+	case federationoutbox.FieldPayload:
+		return m.OldPayload(ctx)
+	case federationoutbox.FieldStatus:
+		return m.OldStatus(ctx)
+	case federationoutbox.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case federationoutbox.FieldLastError:
+		return m.OldLastError(ctx)
+	case federationoutbox.FieldNextRetryAt:
+		return m.OldNextRetryAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown FederationOutbox field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FederationOutboxMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case federationoutbox.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case federationoutbox.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case federationoutbox.FieldAggregateType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAggregateType(v)
+		return nil
+	case federationoutbox.FieldAggregateID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAggregateID(v)
+		return nil
+	case federationoutbox.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case federationoutbox.FieldPayload:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayload(v)
+		return nil
+	case federationoutbox.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case federationoutbox.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case federationoutbox.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	case federationoutbox.FieldNextRetryAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextRetryAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FederationOutbox field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FederationOutboxMutation) AddedFields() []string {
+	var fields []string
+	if m.addattempts != nil {
+		fields = append(fields, federationoutbox.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FederationOutboxMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case federationoutbox.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FederationOutboxMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case federationoutbox.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FederationOutbox numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FederationOutboxMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(federationoutbox.FieldLastError) {
+		fields = append(fields, federationoutbox.FieldLastError)
+	}
+	if m.FieldCleared(federationoutbox.FieldNextRetryAt) {
+		fields = append(fields, federationoutbox.FieldNextRetryAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FederationOutboxMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FederationOutboxMutation) ClearField(name string) error {
+	switch name {
+	case federationoutbox.FieldLastError:
+		m.ClearLastError()
+		return nil
+	case federationoutbox.FieldNextRetryAt:
+		m.ClearNextRetryAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FederationOutbox nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FederationOutboxMutation) ResetField(name string) error {
+	switch name {
+	case federationoutbox.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case federationoutbox.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case federationoutbox.FieldAggregateType:
+		m.ResetAggregateType()
+		return nil
+	case federationoutbox.FieldAggregateID:
+		m.ResetAggregateID()
+		return nil
+	case federationoutbox.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case federationoutbox.FieldPayload:
+		m.ResetPayload()
+		return nil
+	case federationoutbox.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case federationoutbox.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case federationoutbox.FieldLastError:
+		m.ResetLastError()
+		return nil
+	case federationoutbox.FieldNextRetryAt:
+		m.ResetNextRetryAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FederationOutbox field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FederationOutboxMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FederationOutboxMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FederationOutboxMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FederationOutboxMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FederationOutboxMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FederationOutboxMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FederationOutboxMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown FederationOutbox unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FederationOutboxMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown FederationOutbox edge %s", name)
+}
+
+// FederationUsageCursorMutation represents an operation that mutates the FederationUsageCursor nodes in the graph.
+type FederationUsageCursorMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int64
+	created_at           *time.Time
+	updated_at           *time.Time
+	scope                *string
+	last_delivered_id    *int64
+	addlast_delivered_id *int64
+	attempts             *int
+	addattempts          *int
+	last_error           *string
+	next_retry_at        *time.Time
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*FederationUsageCursor, error)
+	predicates           []predicate.FederationUsageCursor
+}
+
+var _ ent.Mutation = (*FederationUsageCursorMutation)(nil)
+
+// federationusagecursorOption allows management of the mutation configuration using functional options.
+type federationusagecursorOption func(*FederationUsageCursorMutation)
+
+// newFederationUsageCursorMutation creates new mutation for the FederationUsageCursor entity.
+func newFederationUsageCursorMutation(c config, op Op, opts ...federationusagecursorOption) *FederationUsageCursorMutation {
+	m := &FederationUsageCursorMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFederationUsageCursor,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFederationUsageCursorID sets the ID field of the mutation.
+func withFederationUsageCursorID(id int64) federationusagecursorOption {
+	return func(m *FederationUsageCursorMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FederationUsageCursor
+		)
+		m.oldValue = func(ctx context.Context) (*FederationUsageCursor, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FederationUsageCursor.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFederationUsageCursor sets the old FederationUsageCursor of the mutation.
+func withFederationUsageCursor(node *FederationUsageCursor) federationusagecursorOption {
+	return func(m *FederationUsageCursorMutation) {
+		m.oldValue = func(context.Context) (*FederationUsageCursor, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FederationUsageCursorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FederationUsageCursorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FederationUsageCursorMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FederationUsageCursorMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FederationUsageCursor.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FederationUsageCursorMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FederationUsageCursorMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FederationUsageCursorMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *FederationUsageCursorMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *FederationUsageCursorMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *FederationUsageCursorMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetScope sets the "scope" field.
+func (m *FederationUsageCursorMutation) SetScope(s string) {
+	m.scope = &s
+}
+
+// Scope returns the value of the "scope" field in the mutation.
+func (m *FederationUsageCursorMutation) Scope() (r string, exists bool) {
+	v := m.scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScope returns the old "scope" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldScope(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScope is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScope requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScope: %w", err)
+	}
+	return oldValue.Scope, nil
+}
+
+// ResetScope resets all changes to the "scope" field.
+func (m *FederationUsageCursorMutation) ResetScope() {
+	m.scope = nil
+}
+
+// SetLastDeliveredID sets the "last_delivered_id" field.
+func (m *FederationUsageCursorMutation) SetLastDeliveredID(i int64) {
+	m.last_delivered_id = &i
+	m.addlast_delivered_id = nil
+}
+
+// LastDeliveredID returns the value of the "last_delivered_id" field in the mutation.
+func (m *FederationUsageCursorMutation) LastDeliveredID() (r int64, exists bool) {
+	v := m.last_delivered_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastDeliveredID returns the old "last_delivered_id" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldLastDeliveredID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastDeliveredID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastDeliveredID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastDeliveredID: %w", err)
+	}
+	return oldValue.LastDeliveredID, nil
+}
+
+// AddLastDeliveredID adds i to the "last_delivered_id" field.
+func (m *FederationUsageCursorMutation) AddLastDeliveredID(i int64) {
+	if m.addlast_delivered_id != nil {
+		*m.addlast_delivered_id += i
+	} else {
+		m.addlast_delivered_id = &i
+	}
+}
+
+// AddedLastDeliveredID returns the value that was added to the "last_delivered_id" field in this mutation.
+func (m *FederationUsageCursorMutation) AddedLastDeliveredID() (r int64, exists bool) {
+	v := m.addlast_delivered_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLastDeliveredID resets all changes to the "last_delivered_id" field.
+func (m *FederationUsageCursorMutation) ResetLastDeliveredID() {
+	m.last_delivered_id = nil
+	m.addlast_delivered_id = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *FederationUsageCursorMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *FederationUsageCursorMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *FederationUsageCursorMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *FederationUsageCursorMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *FederationUsageCursorMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetLastError sets the "last_error" field.
+func (m *FederationUsageCursorMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *FederationUsageCursorMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldLastError(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *FederationUsageCursorMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[federationusagecursor.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *FederationUsageCursorMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[federationusagecursor.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *FederationUsageCursorMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, federationusagecursor.FieldLastError)
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (m *FederationUsageCursorMutation) SetNextRetryAt(t time.Time) {
+	m.next_retry_at = &t
+}
+
+// NextRetryAt returns the value of the "next_retry_at" field in the mutation.
+func (m *FederationUsageCursorMutation) NextRetryAt() (r time.Time, exists bool) {
+	v := m.next_retry_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextRetryAt returns the old "next_retry_at" field's value of the FederationUsageCursor entity.
+// If the FederationUsageCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FederationUsageCursorMutation) OldNextRetryAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextRetryAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextRetryAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextRetryAt: %w", err)
+	}
+	return oldValue.NextRetryAt, nil
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (m *FederationUsageCursorMutation) ClearNextRetryAt() {
+	m.next_retry_at = nil
+	m.clearedFields[federationusagecursor.FieldNextRetryAt] = struct{}{}
+}
+
+// NextRetryAtCleared returns if the "next_retry_at" field was cleared in this mutation.
+func (m *FederationUsageCursorMutation) NextRetryAtCleared() bool {
+	_, ok := m.clearedFields[federationusagecursor.FieldNextRetryAt]
+	return ok
+}
+
+// ResetNextRetryAt resets all changes to the "next_retry_at" field.
+func (m *FederationUsageCursorMutation) ResetNextRetryAt() {
+	m.next_retry_at = nil
+	delete(m.clearedFields, federationusagecursor.FieldNextRetryAt)
+}
+
+// Where appends a list predicates to the FederationUsageCursorMutation builder.
+func (m *FederationUsageCursorMutation) Where(ps ...predicate.FederationUsageCursor) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FederationUsageCursorMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FederationUsageCursorMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FederationUsageCursor, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FederationUsageCursorMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FederationUsageCursorMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FederationUsageCursor).
+func (m *FederationUsageCursorMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FederationUsageCursorMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, federationusagecursor.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, federationusagecursor.FieldUpdatedAt)
+	}
+	if m.scope != nil {
+		fields = append(fields, federationusagecursor.FieldScope)
+	}
+	if m.last_delivered_id != nil {
+		fields = append(fields, federationusagecursor.FieldLastDeliveredID)
+	}
+	if m.attempts != nil {
+		fields = append(fields, federationusagecursor.FieldAttempts)
+	}
+	if m.last_error != nil {
+		fields = append(fields, federationusagecursor.FieldLastError)
+	}
+	if m.next_retry_at != nil {
+		fields = append(fields, federationusagecursor.FieldNextRetryAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FederationUsageCursorMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case federationusagecursor.FieldCreatedAt:
+		return m.CreatedAt()
+	case federationusagecursor.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case federationusagecursor.FieldScope:
+		return m.Scope()
+	case federationusagecursor.FieldLastDeliveredID:
+		return m.LastDeliveredID()
+	case federationusagecursor.FieldAttempts:
+		return m.Attempts()
+	case federationusagecursor.FieldLastError:
+		return m.LastError()
+	case federationusagecursor.FieldNextRetryAt:
+		return m.NextRetryAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FederationUsageCursorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case federationusagecursor.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case federationusagecursor.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case federationusagecursor.FieldScope:
+		return m.OldScope(ctx)
+	case federationusagecursor.FieldLastDeliveredID:
+		return m.OldLastDeliveredID(ctx)
+	case federationusagecursor.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case federationusagecursor.FieldLastError:
+		return m.OldLastError(ctx)
+	case federationusagecursor.FieldNextRetryAt:
+		return m.OldNextRetryAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown FederationUsageCursor field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FederationUsageCursorMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case federationusagecursor.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case federationusagecursor.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case federationusagecursor.FieldScope:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScope(v)
+		return nil
+	case federationusagecursor.FieldLastDeliveredID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastDeliveredID(v)
+		return nil
+	case federationusagecursor.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case federationusagecursor.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	case federationusagecursor.FieldNextRetryAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextRetryAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FederationUsageCursor field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FederationUsageCursorMutation) AddedFields() []string {
+	var fields []string
+	if m.addlast_delivered_id != nil {
+		fields = append(fields, federationusagecursor.FieldLastDeliveredID)
+	}
+	if m.addattempts != nil {
+		fields = append(fields, federationusagecursor.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FederationUsageCursorMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case federationusagecursor.FieldLastDeliveredID:
+		return m.AddedLastDeliveredID()
+	case federationusagecursor.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FederationUsageCursorMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case federationusagecursor.FieldLastDeliveredID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLastDeliveredID(v)
+		return nil
+	case federationusagecursor.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FederationUsageCursor numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FederationUsageCursorMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(federationusagecursor.FieldLastError) {
+		fields = append(fields, federationusagecursor.FieldLastError)
+	}
+	if m.FieldCleared(federationusagecursor.FieldNextRetryAt) {
+		fields = append(fields, federationusagecursor.FieldNextRetryAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FederationUsageCursorMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FederationUsageCursorMutation) ClearField(name string) error {
+	switch name {
+	case federationusagecursor.FieldLastError:
+		m.ClearLastError()
+		return nil
+	case federationusagecursor.FieldNextRetryAt:
+		m.ClearNextRetryAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FederationUsageCursor nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FederationUsageCursorMutation) ResetField(name string) error {
+	switch name {
+	case federationusagecursor.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case federationusagecursor.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case federationusagecursor.FieldScope:
+		m.ResetScope()
+		return nil
+	case federationusagecursor.FieldLastDeliveredID:
+		m.ResetLastDeliveredID()
+		return nil
+	case federationusagecursor.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case federationusagecursor.FieldLastError:
+		m.ResetLastError()
+		return nil
+	case federationusagecursor.FieldNextRetryAt:
+		m.ResetNextRetryAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FederationUsageCursor field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FederationUsageCursorMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FederationUsageCursorMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FederationUsageCursorMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FederationUsageCursorMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FederationUsageCursorMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FederationUsageCursorMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FederationUsageCursorMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown FederationUsageCursor unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FederationUsageCursorMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown FederationUsageCursor edge %s", name)
 }
 
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
@@ -49929,83 +51582,85 @@ func (m *UsageLogMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *int64
-	created_at                    *time.Time
-	updated_at                    *time.Time
-	deleted_at                    *time.Time
-	email                         *string
-	password_hash                 *string
-	role                          *string
-	balance                       *float64
-	addbalance                    *float64
-	frozen_balance                *float64
-	addfrozen_balance             *float64
-	concurrency                   *int
-	addconcurrency                *int
-	status                        *string
-	username                      *string
-	notes                         *string
-	totp_secret_encrypted         *string
-	totp_enabled                  *bool
-	totp_enabled_at               *time.Time
-	signup_source                 *string
-	last_login_at                 *time.Time
-	last_active_at                *time.Time
-	restrict_public_groups        *bool
-	balance_notify_enabled        *bool
-	balance_notify_threshold_type *string
-	balance_notify_threshold      *float64
-	addbalance_notify_threshold   *float64
-	balance_notify_extra_emails   *string
-	total_recharged               *float64
-	addtotal_recharged            *float64
-	rpm_limit                     *int
-	addrpm_limit                  *int
-	clearedFields                 map[string]struct{}
-	api_keys                      map[int64]struct{}
-	removedapi_keys               map[int64]struct{}
-	clearedapi_keys               bool
-	redeem_codes                  map[int64]struct{}
-	removedredeem_codes           map[int64]struct{}
-	clearedredeem_codes           bool
-	subscriptions                 map[int64]struct{}
-	removedsubscriptions          map[int64]struct{}
-	clearedsubscriptions          bool
-	assigned_subscriptions        map[int64]struct{}
-	removedassigned_subscriptions map[int64]struct{}
-	clearedassigned_subscriptions bool
-	announcement_reads            map[int64]struct{}
-	removedannouncement_reads     map[int64]struct{}
-	clearedannouncement_reads     bool
-	allowed_groups                map[int64]struct{}
-	removedallowed_groups         map[int64]struct{}
-	clearedallowed_groups         bool
-	usage_logs                    map[int64]struct{}
-	removedusage_logs             map[int64]struct{}
-	clearedusage_logs             bool
-	attribute_values              map[int64]struct{}
-	removedattribute_values       map[int64]struct{}
-	clearedattribute_values       bool
-	promo_code_usages             map[int64]struct{}
-	removedpromo_code_usages      map[int64]struct{}
-	clearedpromo_code_usages      bool
-	payment_orders                map[int64]struct{}
-	removedpayment_orders         map[int64]struct{}
-	clearedpayment_orders         bool
-	auth_identities               map[int64]struct{}
-	removedauth_identities        map[int64]struct{}
-	clearedauth_identities        bool
-	pending_auth_sessions         map[int64]struct{}
-	removedpending_auth_sessions  map[int64]struct{}
-	clearedpending_auth_sessions  bool
-	platform_quotas               map[int64]struct{}
-	removedplatform_quotas        map[int64]struct{}
-	clearedplatform_quotas        bool
-	done                          bool
-	oldValue                      func(context.Context) (*User, error)
-	predicates                    []predicate.User
+	op                                Op
+	typ                               string
+	id                                *int64
+	created_at                        *time.Time
+	updated_at                        *time.Time
+	deleted_at                        *time.Time
+	email                             *string
+	password_hash                     *string
+	role                              *string
+	balance                           *float64
+	addbalance                        *float64
+	frozen_balance                    *float64
+	addfrozen_balance                 *float64
+	concurrency                       *int
+	addconcurrency                    *int
+	status                            *string
+	username                          *string
+	notes                             *string
+	totp_secret_encrypted             *string
+	totp_enabled                      *bool
+	totp_enabled_at                   *time.Time
+	signup_source                     *string
+	last_login_at                     *time.Time
+	last_active_at                    *time.Time
+	restrict_public_groups            *bool
+	balance_notify_enabled            *bool
+	balance_notify_threshold_type     *string
+	balance_notify_threshold          *float64
+	addbalance_notify_threshold       *float64
+	balance_notify_extra_emails       *string
+	total_recharged                   *float64
+	addtotal_recharged                *float64
+	rpm_limit                         *int
+	addrpm_limit                      *int
+	federation_usage_watermark_seq    *int64
+	addfederation_usage_watermark_seq *int64
+	clearedFields                     map[string]struct{}
+	api_keys                          map[int64]struct{}
+	removedapi_keys                   map[int64]struct{}
+	clearedapi_keys                   bool
+	redeem_codes                      map[int64]struct{}
+	removedredeem_codes               map[int64]struct{}
+	clearedredeem_codes               bool
+	subscriptions                     map[int64]struct{}
+	removedsubscriptions              map[int64]struct{}
+	clearedsubscriptions              bool
+	assigned_subscriptions            map[int64]struct{}
+	removedassigned_subscriptions     map[int64]struct{}
+	clearedassigned_subscriptions     bool
+	announcement_reads                map[int64]struct{}
+	removedannouncement_reads         map[int64]struct{}
+	clearedannouncement_reads         bool
+	allowed_groups                    map[int64]struct{}
+	removedallowed_groups             map[int64]struct{}
+	clearedallowed_groups             bool
+	usage_logs                        map[int64]struct{}
+	removedusage_logs                 map[int64]struct{}
+	clearedusage_logs                 bool
+	attribute_values                  map[int64]struct{}
+	removedattribute_values           map[int64]struct{}
+	clearedattribute_values           bool
+	promo_code_usages                 map[int64]struct{}
+	removedpromo_code_usages          map[int64]struct{}
+	clearedpromo_code_usages          bool
+	payment_orders                    map[int64]struct{}
+	removedpayment_orders             map[int64]struct{}
+	clearedpayment_orders             bool
+	auth_identities                   map[int64]struct{}
+	removedauth_identities            map[int64]struct{}
+	clearedauth_identities            bool
+	pending_auth_sessions             map[int64]struct{}
+	removedpending_auth_sessions      map[int64]struct{}
+	clearedpending_auth_sessions      bool
+	platform_quotas                   map[int64]struct{}
+	removedplatform_quotas            map[int64]struct{}
+	clearedplatform_quotas            bool
+	done                              bool
+	oldValue                          func(context.Context) (*User, error)
+	predicates                        []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -51205,6 +52860,62 @@ func (m *UserMutation) ResetRpmLimit() {
 	m.addrpm_limit = nil
 }
 
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (m *UserMutation) SetFederationUsageWatermarkSeq(i int64) {
+	m.federation_usage_watermark_seq = &i
+	m.addfederation_usage_watermark_seq = nil
+}
+
+// FederationUsageWatermarkSeq returns the value of the "federation_usage_watermark_seq" field in the mutation.
+func (m *UserMutation) FederationUsageWatermarkSeq() (r int64, exists bool) {
+	v := m.federation_usage_watermark_seq
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFederationUsageWatermarkSeq returns the old "federation_usage_watermark_seq" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldFederationUsageWatermarkSeq(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFederationUsageWatermarkSeq is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFederationUsageWatermarkSeq requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFederationUsageWatermarkSeq: %w", err)
+	}
+	return oldValue.FederationUsageWatermarkSeq, nil
+}
+
+// AddFederationUsageWatermarkSeq adds i to the "federation_usage_watermark_seq" field.
+func (m *UserMutation) AddFederationUsageWatermarkSeq(i int64) {
+	if m.addfederation_usage_watermark_seq != nil {
+		*m.addfederation_usage_watermark_seq += i
+	} else {
+		m.addfederation_usage_watermark_seq = &i
+	}
+}
+
+// AddedFederationUsageWatermarkSeq returns the value that was added to the "federation_usage_watermark_seq" field in this mutation.
+func (m *UserMutation) AddedFederationUsageWatermarkSeq() (r int64, exists bool) {
+	v := m.addfederation_usage_watermark_seq
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFederationUsageWatermarkSeq resets all changes to the "federation_usage_watermark_seq" field.
+func (m *UserMutation) ResetFederationUsageWatermarkSeq() {
+	m.federation_usage_watermark_seq = nil
+	m.addfederation_usage_watermark_seq = nil
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by ids.
 func (m *UserMutation) AddAPIKeyIDs(ids ...int64) {
 	if m.api_keys == nil {
@@ -51941,7 +53652,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 25)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -52017,6 +53728,9 @@ func (m *UserMutation) Fields() []string {
 	if m.rpm_limit != nil {
 		fields = append(fields, user.FieldRpmLimit)
 	}
+	if m.federation_usage_watermark_seq != nil {
+		fields = append(fields, user.FieldFederationUsageWatermarkSeq)
+	}
 	return fields
 }
 
@@ -52075,6 +53789,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.TotalRecharged()
 	case user.FieldRpmLimit:
 		return m.RpmLimit()
+	case user.FieldFederationUsageWatermarkSeq:
+		return m.FederationUsageWatermarkSeq()
 	}
 	return nil, false
 }
@@ -52134,6 +53850,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldTotalRecharged(ctx)
 	case user.FieldRpmLimit:
 		return m.OldRpmLimit(ctx)
+	case user.FieldFederationUsageWatermarkSeq:
+		return m.OldFederationUsageWatermarkSeq(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -52318,6 +54036,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRpmLimit(v)
 		return nil
+	case user.FieldFederationUsageWatermarkSeq:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFederationUsageWatermarkSeq(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -52344,6 +54069,9 @@ func (m *UserMutation) AddedFields() []string {
 	if m.addrpm_limit != nil {
 		fields = append(fields, user.FieldRpmLimit)
 	}
+	if m.addfederation_usage_watermark_seq != nil {
+		fields = append(fields, user.FieldFederationUsageWatermarkSeq)
+	}
 	return fields
 }
 
@@ -52364,6 +54092,8 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedTotalRecharged()
 	case user.FieldRpmLimit:
 		return m.AddedRpmLimit()
+	case user.FieldFederationUsageWatermarkSeq:
+		return m.AddedFederationUsageWatermarkSeq()
 	}
 	return nil, false
 }
@@ -52414,6 +54144,13 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRpmLimit(v)
+		return nil
+	case user.FieldFederationUsageWatermarkSeq:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFederationUsageWatermarkSeq(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
@@ -52555,6 +54292,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldRpmLimit:
 		m.ResetRpmLimit()
+		return nil
+	case user.FieldFederationUsageWatermarkSeq:
+		m.ResetFederationUsageWatermarkSeq()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

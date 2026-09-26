@@ -16,10 +16,13 @@ import (
 	"time"
 
 	_ "github.com/LuckyKuang/sub2api-plus/ent/runtime"
+	"github.com/LuckyKuang/sub2api-plus/ent/schema/mixins"
 	"github.com/LuckyKuang/sub2api-plus/internal/config"
 	"github.com/LuckyKuang/sub2api-plus/internal/handler"
 	"github.com/LuckyKuang/sub2api-plus/internal/pkg/logger"
+	"github.com/LuckyKuang/sub2api-plus/internal/repository"
 	"github.com/LuckyKuang/sub2api-plus/internal/server/middleware"
+	"github.com/LuckyKuang/sub2api-plus/internal/service"
 	"github.com/LuckyKuang/sub2api-plus/internal/setup"
 	"github.com/LuckyKuang/sub2api-plus/internal/web"
 
@@ -141,6 +144,24 @@ func runMainServer() {
 	}
 	if cfg.RunMode == config.RunModeSimple {
 		log.Println("⚠️  WARNING: Running in SIMPLE mode - billing and quota checks are DISABLED")
+	}
+
+	// Federation outbox (off by default): only the mainland node that runs
+	// federation-pusher should write outbox events.
+	mixins.SetFederationOutboxEnabled(cfg.Federation.OutboxEnabled)
+
+	// Federation admission check (POC, off by default): a dedicated ent
+	// client kept separate from the wire-managed one so enabling this never
+	// requires touching the DI graph. See
+	// openspec/changes/federation-admission-check/design.md.
+	if cfg.Federation.AdmissionCheckEnabled {
+		federationClient, _, err := repository.InitEnt(cfg)
+		if err != nil {
+			log.Fatalf("Failed to init federation admission ent client: %v", err)
+		}
+		middleware.FederationAvailableBalanceFunc = func(ctx context.Context, userID int64, balance float64, watermarkSeq int64) (float64, error) {
+			return service.FederationAvailableBalance(ctx, federationClient, userID, balance, watermarkSeq)
+		}
 	}
 
 	buildInfo := handler.BuildInfo{

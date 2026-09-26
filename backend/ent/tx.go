@@ -46,6 +46,10 @@ type Tx struct {
 	CompositeModelRoute *CompositeModelRouteClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
+	// FederationOutbox is the client for interacting with the FederationOutbox builders.
+	FederationOutbox *FederationOutboxClient
+	// FederationUsageCursor is the client for interacting with the FederationUsageCursor builders.
+	FederationUsageCursor *FederationUsageCursorClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -239,6 +243,8 @@ func (tx *Tx) init() {
 	tx.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(tx.config)
 	tx.CompositeModelRoute = NewCompositeModelRouteClient(tx.config)
 	tx.ErrorPassthroughRule = NewErrorPassthroughRuleClient(tx.config)
+	tx.FederationOutbox = NewFederationOutboxClient(tx.config)
+	tx.FederationUsageCursor = NewFederationUsageCursorClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.IdempotencyRecord = NewIdempotencyRecordClient(tx.config)
 	tx.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(tx.config)

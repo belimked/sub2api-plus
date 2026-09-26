@@ -446,6 +446,27 @@ func (_u *UserUpdate) AddRpmLimit(v int) *UserUpdate {
 	return _u
 }
 
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (_u *UserUpdate) SetFederationUsageWatermarkSeq(v int64) *UserUpdate {
+	_u.mutation.ResetFederationUsageWatermarkSeq()
+	_u.mutation.SetFederationUsageWatermarkSeq(v)
+	return _u
+}
+
+// SetNillableFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableFederationUsageWatermarkSeq(v *int64) *UserUpdate {
+	if v != nil {
+		_u.SetFederationUsageWatermarkSeq(*v)
+	}
+	return _u
+}
+
+// AddFederationUsageWatermarkSeq adds value to the "federation_usage_watermark_seq" field.
+func (_u *UserUpdate) AddFederationUsageWatermarkSeq(v int64) *UserUpdate {
+	_u.mutation.AddFederationUsageWatermarkSeq(v)
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *UserUpdate) AddAPIKeyIDs(ids ...int64) *UserUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -1115,6 +1136,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedRpmLimit(); ok {
 		_spec.AddField(user.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.FederationUsageWatermarkSeq(); ok {
+		_spec.SetField(user.FieldFederationUsageWatermarkSeq, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedFederationUsageWatermarkSeq(); ok {
+		_spec.AddField(user.FieldFederationUsageWatermarkSeq, field.TypeInt64, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2139,6 +2166,27 @@ func (_u *UserUpdateOne) AddRpmLimit(v int) *UserUpdateOne {
 	return _u
 }
 
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (_u *UserUpdateOne) SetFederationUsageWatermarkSeq(v int64) *UserUpdateOne {
+	_u.mutation.ResetFederationUsageWatermarkSeq()
+	_u.mutation.SetFederationUsageWatermarkSeq(v)
+	return _u
+}
+
+// SetNillableFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableFederationUsageWatermarkSeq(v *int64) *UserUpdateOne {
+	if v != nil {
+		_u.SetFederationUsageWatermarkSeq(*v)
+	}
+	return _u
+}
+
+// AddFederationUsageWatermarkSeq adds value to the "federation_usage_watermark_seq" field.
+func (_u *UserUpdateOne) AddFederationUsageWatermarkSeq(v int64) *UserUpdateOne {
+	_u.mutation.AddFederationUsageWatermarkSeq(v)
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *UserUpdateOne) AddAPIKeyIDs(ids ...int64) *UserUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -2838,6 +2886,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.AddedRpmLimit(); ok {
 		_spec.AddField(user.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.FederationUsageWatermarkSeq(); ok {
+		_spec.SetField(user.FieldFederationUsageWatermarkSeq, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedFederationUsageWatermarkSeq(); ok {
+		_spec.AddField(user.FieldFederationUsageWatermarkSeq, field.TypeInt64, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{

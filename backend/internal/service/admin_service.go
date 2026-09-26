@@ -20,6 +20,14 @@ type AdminService interface {
 	UpdateUser(ctx context.Context, id int64, input *UpdateUserInput) (*User, error)
 	DeleteUser(ctx context.Context, id int64) error
 	UpdateUserBalance(ctx context.Context, userID int64, balance float64, operation string, notes string) (*User, error)
+	// BumpFederationUsageWatermark advances federation_usage_watermark_seq to
+	// max(current, usageSeq). Pure data recording (see
+	// openspec/changes/federation-balance-sync/) -- no balance mutation, no
+	// affiliate/redeem-code/cache side effects, unlike UpdateUserBalance.
+	BumpFederationUsageWatermark(ctx context.Context, userID int64, usageSeq int64) error
+	// SetFederationPasswordHash stores a mainland bcrypt hash verbatim for a
+	// federated (non-admin) user; requires federation.accept_password_hash.
+	SetFederationPasswordHash(ctx context.Context, userID int64, passwordHash string) error
 	BatchUpdateConcurrency(ctx context.Context, userIDs []int64, value int, mode string) (int, error)
 	BatchUpdateLimits(ctx context.Context, userIDs []int64, concurrency, rpmLimit *int) (int, error)
 	GetUserAPIKeys(ctx context.Context, userID int64, page, pageSize int, sortBy, sortOrder string) ([]APIKey, int64, error)

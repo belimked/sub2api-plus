@@ -202,6 +202,14 @@ func (s *stubAdminService) UpdateUserBalance(ctx context.Context, userID int64, 
 	return &user, nil
 }
 
+func (s *stubAdminService) BumpFederationUsageWatermark(ctx context.Context, userID int64, usageSeq int64) error {
+	return nil
+}
+
+func (s *stubAdminService) SetFederationPasswordHash(ctx context.Context, userID int64, passwordHash string) error {
+	return nil
+}
+
 func (s *stubAdminService) BatchUpdateConcurrency(ctx context.Context, userIDs []int64, value int, mode string) (int, error) {
 	return len(userIDs), nil
 }

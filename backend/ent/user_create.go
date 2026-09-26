@@ -368,6 +368,20 @@ func (_c *UserCreate) SetNillableRpmLimit(v *int) *UserCreate {
 	return _c
 }
 
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (_c *UserCreate) SetFederationUsageWatermarkSeq(v int64) *UserCreate {
+	_c.mutation.SetFederationUsageWatermarkSeq(v)
+	return _c
+}
+
+// SetNillableFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field if the given value is not nil.
+func (_c *UserCreate) SetNillableFederationUsageWatermarkSeq(v *int64) *UserCreate {
+	if v != nil {
+		_c.SetFederationUsageWatermarkSeq(*v)
+	}
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *UserCreate) AddAPIKeyIDs(ids ...int64) *UserCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -674,6 +688,10 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultRpmLimit
 		_c.mutation.SetRpmLimit(v)
 	}
+	if _, ok := _c.mutation.FederationUsageWatermarkSeq(); !ok {
+		v := user.DefaultFederationUsageWatermarkSeq
+		_c.mutation.SetFederationUsageWatermarkSeq(v)
+	}
 	return nil
 }
 
@@ -765,6 +783,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.RpmLimit(); !ok {
 		return &ValidationError{Name: "rpm_limit", err: errors.New(`ent: missing required field "User.rpm_limit"`)}
+	}
+	if _, ok := _c.mutation.FederationUsageWatermarkSeq(); !ok {
+		return &ValidationError{Name: "federation_usage_watermark_seq", err: errors.New(`ent: missing required field "User.federation_usage_watermark_seq"`)}
 	}
 	return nil
 }
@@ -892,6 +913,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RpmLimit(); ok {
 		_spec.SetField(user.FieldRpmLimit, field.TypeInt, value)
 		_node.RpmLimit = value
+	}
+	if value, ok := _c.mutation.FederationUsageWatermarkSeq(); ok {
+		_spec.SetField(user.FieldFederationUsageWatermarkSeq, field.TypeInt64, value)
+		_node.FederationUsageWatermarkSeq = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1517,6 +1542,24 @@ func (u *UserUpsert) AddRpmLimit(v int) *UserUpsert {
 	return u
 }
 
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (u *UserUpsert) SetFederationUsageWatermarkSeq(v int64) *UserUpsert {
+	u.Set(user.FieldFederationUsageWatermarkSeq, v)
+	return u
+}
+
+// UpdateFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field to the value that was provided on create.
+func (u *UserUpsert) UpdateFederationUsageWatermarkSeq() *UserUpsert {
+	u.SetExcluded(user.FieldFederationUsageWatermarkSeq)
+	return u
+}
+
+// AddFederationUsageWatermarkSeq adds v to the "federation_usage_watermark_seq" field.
+func (u *UserUpsert) AddFederationUsageWatermarkSeq(v int64) *UserUpsert {
+	u.Add(user.FieldFederationUsageWatermarkSeq, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1979,6 +2022,27 @@ func (u *UserUpsertOne) AddRpmLimit(v int) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateRpmLimit() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRpmLimit()
+	})
+}
+
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (u *UserUpsertOne) SetFederationUsageWatermarkSeq(v int64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetFederationUsageWatermarkSeq(v)
+	})
+}
+
+// AddFederationUsageWatermarkSeq adds v to the "federation_usage_watermark_seq" field.
+func (u *UserUpsertOne) AddFederationUsageWatermarkSeq(v int64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.AddFederationUsageWatermarkSeq(v)
+	})
+}
+
+// UpdateFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateFederationUsageWatermarkSeq() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateFederationUsageWatermarkSeq()
 	})
 }
 
@@ -2610,6 +2674,27 @@ func (u *UserUpsertBulk) AddRpmLimit(v int) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateRpmLimit() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRpmLimit()
+	})
+}
+
+// SetFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field.
+func (u *UserUpsertBulk) SetFederationUsageWatermarkSeq(v int64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetFederationUsageWatermarkSeq(v)
+	})
+}
+
+// AddFederationUsageWatermarkSeq adds v to the "federation_usage_watermark_seq" field.
+func (u *UserUpsertBulk) AddFederationUsageWatermarkSeq(v int64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.AddFederationUsageWatermarkSeq(v)
+	})
+}
+
+// UpdateFederationUsageWatermarkSeq sets the "federation_usage_watermark_seq" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateFederationUsageWatermarkSeq() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateFederationUsageWatermarkSeq()
 	})
 }
 

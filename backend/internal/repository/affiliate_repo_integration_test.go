@@ -4,11 +4,13 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
+	"github.com/LuckyKuang/sub2api-plus/ent/schema/mixins"
 	"github.com/LuckyKuang/sub2api-plus/internal/service"
 	"github.com/stretchr/testify/require"
 )
@@ -168,6 +170,46 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 	require.NoError(t, rows.Scan(&postRollbackCount))
 	require.Equal(t, 0, postRollbackCount,
 		"AccrueQuota must propagate the outer tx — found persisted rows after rollback")
+}
+
+func TestAffiliateRepository_TransferQuotaToBalance_EmitsFederationBalanceSnapshot(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	client := tx.Client()
+	repo := NewAffiliateRepository(client, integrationDB)
+
+	u := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("affiliate-federation-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		Balance:      5.5,
+		Concurrency:  5,
+	})
+	affCode := fmt.Sprintf("AFF%09d", time.Now().UnixNano()%1_000_000_000)
+	_, err := client.ExecContext(txCtx, `
+INSERT INTO user_affiliates (user_id, aff_code, aff_quota, aff_history_quota, created_at, updated_at)
+VALUES ($1, $2, $3, $3, NOW(), NOW())`, u.ID, affCode, 1.5)
+	require.NoError(t, err)
+
+	mixins.SetFederationOutboxEnabled(true)
+	t.Cleanup(func() { mixins.SetFederationOutboxEnabled(false) })
+	_, _, err = repo.TransferQuotaToBalance(txCtx, u.ID)
+	require.NoError(t, err)
+
+	rows, err := client.QueryContext(txCtx, `
+SELECT payload FROM federation_outbox_events
+WHERE aggregate_id = $1 AND event_type = 'balance.snapshot'
+ORDER BY id DESC LIMIT 1`, fmt.Sprintf("%d", u.ID))
+	require.NoError(t, err)
+	defer func() { _ = rows.Close() }()
+	require.True(t, rows.Next(), "expected a balance.snapshot row")
+	var payload string
+	require.NoError(t, rows.Scan(&payload))
+	var snapshot federationBalancePayload
+	require.NoError(t, json.Unmarshal([]byte(payload), &snapshot))
+	require.InDelta(t, 7.0, snapshot.Balance, 1e-9)
 }
 
 func TestAffiliateRepository_TransferQuotaToBalance_EmptyQuota(t *testing.T) {

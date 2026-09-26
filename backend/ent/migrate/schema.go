@@ -900,6 +900,62 @@ var (
 			},
 		},
 	}
+	// FederationOutboxEventsColumns holds the columns for the "federation_outbox_events" table.
+	FederationOutboxEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "aggregate_type", Type: field.TypeString, Size: 32},
+		{Name: "aggregate_id", Type: field.TypeString, Size: 64},
+		{Name: "event_type", Type: field.TypeString, Size: 64},
+		{Name: "payload", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "status", Type: field.TypeString, Size: 16, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "next_retry_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// FederationOutboxEventsTable holds the schema information for the "federation_outbox_events" table.
+	FederationOutboxEventsTable = &schema.Table{
+		Name:       "federation_outbox_events",
+		Columns:    FederationOutboxEventsColumns,
+		PrimaryKey: []*schema.Column{FederationOutboxEventsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "federationoutbox_status",
+				Unique:  false,
+				Columns: []*schema.Column{FederationOutboxEventsColumns[7]},
+			},
+			{
+				Name:    "federationoutbox_status_next_retry_at",
+				Unique:  false,
+				Columns: []*schema.Column{FederationOutboxEventsColumns[7], FederationOutboxEventsColumns[10]},
+			},
+		},
+	}
+	// FederationUsageCursorsColumns holds the columns for the "federation_usage_cursors" table.
+	FederationUsageCursorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "scope", Type: field.TypeString, Size: 64},
+		{Name: "last_delivered_id", Type: field.TypeInt64, Default: 0},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "next_retry_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// FederationUsageCursorsTable holds the schema information for the "federation_usage_cursors" table.
+	FederationUsageCursorsTable = &schema.Table{
+		Name:       "federation_usage_cursors",
+		Columns:    FederationUsageCursorsColumns,
+		PrimaryKey: []*schema.Column{FederationUsageCursorsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "federationusagecursor_scope",
+				Unique:  true,
+				Columns: []*schema.Column{FederationUsageCursorsColumns[3]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1828,6 +1884,7 @@ var (
 		{Name: "balance_notify_extra_emails", Type: field.TypeString, Default: "[]", SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "total_recharged", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "rpm_limit", Type: field.TypeInt, Default: 0},
+		{Name: "federation_usage_watermark_seq", Type: field.TypeInt64, Default: 0},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -2123,6 +2180,8 @@ var (
 		ChannelMonitorRequestTemplatesTable,
 		CompositeModelRoutesTable,
 		ErrorPassthroughRulesTable,
+		FederationOutboxEventsTable,
+		FederationUsageCursorsTable,
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
@@ -2211,6 +2270,12 @@ func init() {
 	}
 	ErrorPassthroughRulesTable.Annotation = &entsql.Annotation{
 		Table: "error_passthrough_rules",
+	}
+	FederationOutboxEventsTable.Annotation = &entsql.Annotation{
+		Table: "federation_outbox_events",
+	}
+	FederationUsageCursorsTable.Annotation = &entsql.Annotation{
+		Table: "federation_usage_cursors",
 	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",

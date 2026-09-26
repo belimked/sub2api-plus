@@ -31,6 +31,8 @@ import (
 	"github.com/LuckyKuang/sub2api-plus/ent/channelmonitorrequesttemplate"
 	"github.com/LuckyKuang/sub2api-plus/ent/compositemodelroute"
 	"github.com/LuckyKuang/sub2api-plus/ent/errorpassthroughrule"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationoutbox"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationusagecursor"
 	"github.com/LuckyKuang/sub2api-plus/ent/group"
 	"github.com/LuckyKuang/sub2api-plus/ent/idempotencyrecord"
 	"github.com/LuckyKuang/sub2api-plus/ent/identityadoptiondecision"
@@ -95,6 +97,10 @@ type Client struct {
 	CompositeModelRoute *CompositeModelRouteClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
+	// FederationOutbox is the client for interacting with the FederationOutbox builders.
+	FederationOutbox *FederationOutboxClient
+	// FederationUsageCursor is the client for interacting with the FederationUsageCursor builders.
+	FederationUsageCursor *FederationUsageCursorClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -168,6 +174,8 @@ func (c *Client) init() {
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.CompositeModelRoute = NewCompositeModelRouteClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
+	c.FederationOutbox = NewFederationOutboxClient(c.config)
+	c.FederationUsageCursor = NewFederationUsageCursorClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
@@ -299,6 +307,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		CompositeModelRoute:           NewCompositeModelRouteClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		FederationOutbox:              NewFederationOutboxClient(cfg),
+		FederationUsageCursor:         NewFederationUsageCursorClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -357,6 +367,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		CompositeModelRoute:           NewCompositeModelRouteClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		FederationOutbox:              NewFederationOutboxClient(cfg),
+		FederationUsageCursor:         NewFederationUsageCursorClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -413,7 +425,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
 		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
 		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
-		c.CompositeModelRoute, c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord,
+		c.CompositeModelRoute, c.ErrorPassthroughRule, c.FederationOutbox,
+		c.FederationUsageCursor, c.Group, c.IdempotencyRecord,
 		c.IdentityAdoptionDecision, c.PaymentAuditLog, c.PaymentOrder,
 		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
 		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
@@ -433,7 +446,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
 		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
 		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
-		c.CompositeModelRoute, c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord,
+		c.CompositeModelRoute, c.ErrorPassthroughRule, c.FederationOutbox,
+		c.FederationUsageCursor, c.Group, c.IdempotencyRecord,
 		c.IdentityAdoptionDecision, c.PaymentAuditLog, c.PaymentOrder,
 		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
 		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
@@ -480,6 +494,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CompositeModelRoute.mutate(ctx, m)
 	case *ErrorPassthroughRuleMutation:
 		return c.ErrorPassthroughRule.mutate(ctx, m)
+	case *FederationOutboxMutation:
+		return c.FederationOutbox.mutate(ctx, m)
+	case *FederationUsageCursorMutation:
+		return c.FederationUsageCursor.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
@@ -3013,6 +3031,272 @@ func (c *ErrorPassthroughRuleClient) mutate(ctx context.Context, m *ErrorPassthr
 		return (&ErrorPassthroughRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ErrorPassthroughRule mutation op: %q", m.Op())
+	}
+}
+
+// FederationOutboxClient is a client for the FederationOutbox schema.
+type FederationOutboxClient struct {
+	config
+}
+
+// NewFederationOutboxClient returns a client for the FederationOutbox from the given config.
+func NewFederationOutboxClient(c config) *FederationOutboxClient {
+	return &FederationOutboxClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `federationoutbox.Hooks(f(g(h())))`.
+func (c *FederationOutboxClient) Use(hooks ...Hook) {
+	c.hooks.FederationOutbox = append(c.hooks.FederationOutbox, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `federationoutbox.Intercept(f(g(h())))`.
+func (c *FederationOutboxClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FederationOutbox = append(c.inters.FederationOutbox, interceptors...)
+}
+
+// Create returns a builder for creating a FederationOutbox entity.
+func (c *FederationOutboxClient) Create() *FederationOutboxCreate {
+	mutation := newFederationOutboxMutation(c.config, OpCreate)
+	return &FederationOutboxCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FederationOutbox entities.
+func (c *FederationOutboxClient) CreateBulk(builders ...*FederationOutboxCreate) *FederationOutboxCreateBulk {
+	return &FederationOutboxCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FederationOutboxClient) MapCreateBulk(slice any, setFunc func(*FederationOutboxCreate, int)) *FederationOutboxCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FederationOutboxCreateBulk{err: fmt.Errorf("calling to FederationOutboxClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FederationOutboxCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FederationOutboxCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FederationOutbox.
+func (c *FederationOutboxClient) Update() *FederationOutboxUpdate {
+	mutation := newFederationOutboxMutation(c.config, OpUpdate)
+	return &FederationOutboxUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FederationOutboxClient) UpdateOne(_m *FederationOutbox) *FederationOutboxUpdateOne {
+	mutation := newFederationOutboxMutation(c.config, OpUpdateOne, withFederationOutbox(_m))
+	return &FederationOutboxUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FederationOutboxClient) UpdateOneID(id int64) *FederationOutboxUpdateOne {
+	mutation := newFederationOutboxMutation(c.config, OpUpdateOne, withFederationOutboxID(id))
+	return &FederationOutboxUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FederationOutbox.
+func (c *FederationOutboxClient) Delete() *FederationOutboxDelete {
+	mutation := newFederationOutboxMutation(c.config, OpDelete)
+	return &FederationOutboxDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FederationOutboxClient) DeleteOne(_m *FederationOutbox) *FederationOutboxDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FederationOutboxClient) DeleteOneID(id int64) *FederationOutboxDeleteOne {
+	builder := c.Delete().Where(federationoutbox.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FederationOutboxDeleteOne{builder}
+}
+
+// Query returns a query builder for FederationOutbox.
+func (c *FederationOutboxClient) Query() *FederationOutboxQuery {
+	return &FederationOutboxQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFederationOutbox},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FederationOutbox entity by its id.
+func (c *FederationOutboxClient) Get(ctx context.Context, id int64) (*FederationOutbox, error) {
+	return c.Query().Where(federationoutbox.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FederationOutboxClient) GetX(ctx context.Context, id int64) *FederationOutbox {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FederationOutboxClient) Hooks() []Hook {
+	return c.hooks.FederationOutbox
+}
+
+// Interceptors returns the client interceptors.
+func (c *FederationOutboxClient) Interceptors() []Interceptor {
+	return c.inters.FederationOutbox
+}
+
+func (c *FederationOutboxClient) mutate(ctx context.Context, m *FederationOutboxMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FederationOutboxCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FederationOutboxUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FederationOutboxUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FederationOutboxDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FederationOutbox mutation op: %q", m.Op())
+	}
+}
+
+// FederationUsageCursorClient is a client for the FederationUsageCursor schema.
+type FederationUsageCursorClient struct {
+	config
+}
+
+// NewFederationUsageCursorClient returns a client for the FederationUsageCursor from the given config.
+func NewFederationUsageCursorClient(c config) *FederationUsageCursorClient {
+	return &FederationUsageCursorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `federationusagecursor.Hooks(f(g(h())))`.
+func (c *FederationUsageCursorClient) Use(hooks ...Hook) {
+	c.hooks.FederationUsageCursor = append(c.hooks.FederationUsageCursor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `federationusagecursor.Intercept(f(g(h())))`.
+func (c *FederationUsageCursorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FederationUsageCursor = append(c.inters.FederationUsageCursor, interceptors...)
+}
+
+// Create returns a builder for creating a FederationUsageCursor entity.
+func (c *FederationUsageCursorClient) Create() *FederationUsageCursorCreate {
+	mutation := newFederationUsageCursorMutation(c.config, OpCreate)
+	return &FederationUsageCursorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FederationUsageCursor entities.
+func (c *FederationUsageCursorClient) CreateBulk(builders ...*FederationUsageCursorCreate) *FederationUsageCursorCreateBulk {
+	return &FederationUsageCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FederationUsageCursorClient) MapCreateBulk(slice any, setFunc func(*FederationUsageCursorCreate, int)) *FederationUsageCursorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FederationUsageCursorCreateBulk{err: fmt.Errorf("calling to FederationUsageCursorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FederationUsageCursorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FederationUsageCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FederationUsageCursor.
+func (c *FederationUsageCursorClient) Update() *FederationUsageCursorUpdate {
+	mutation := newFederationUsageCursorMutation(c.config, OpUpdate)
+	return &FederationUsageCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FederationUsageCursorClient) UpdateOne(_m *FederationUsageCursor) *FederationUsageCursorUpdateOne {
+	mutation := newFederationUsageCursorMutation(c.config, OpUpdateOne, withFederationUsageCursor(_m))
+	return &FederationUsageCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FederationUsageCursorClient) UpdateOneID(id int64) *FederationUsageCursorUpdateOne {
+	mutation := newFederationUsageCursorMutation(c.config, OpUpdateOne, withFederationUsageCursorID(id))
+	return &FederationUsageCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FederationUsageCursor.
+func (c *FederationUsageCursorClient) Delete() *FederationUsageCursorDelete {
+	mutation := newFederationUsageCursorMutation(c.config, OpDelete)
+	return &FederationUsageCursorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FederationUsageCursorClient) DeleteOne(_m *FederationUsageCursor) *FederationUsageCursorDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FederationUsageCursorClient) DeleteOneID(id int64) *FederationUsageCursorDeleteOne {
+	builder := c.Delete().Where(federationusagecursor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FederationUsageCursorDeleteOne{builder}
+}
+
+// Query returns a query builder for FederationUsageCursor.
+func (c *FederationUsageCursorClient) Query() *FederationUsageCursorQuery {
+	return &FederationUsageCursorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFederationUsageCursor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FederationUsageCursor entity by its id.
+func (c *FederationUsageCursorClient) Get(ctx context.Context, id int64) (*FederationUsageCursor, error) {
+	return c.Query().Where(federationusagecursor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FederationUsageCursorClient) GetX(ctx context.Context, id int64) *FederationUsageCursor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FederationUsageCursorClient) Hooks() []Hook {
+	return c.hooks.FederationUsageCursor
+}
+
+// Interceptors returns the client interceptors.
+func (c *FederationUsageCursorClient) Interceptors() []Interceptor {
+	return c.inters.FederationUsageCursor
+}
+
+func (c *FederationUsageCursorClient) mutate(ctx context.Context, m *FederationUsageCursorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FederationUsageCursorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FederationUsageCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FederationUsageCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FederationUsageCursorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FederationUsageCursor mutation op: %q", m.Op())
 	}
 }
 
@@ -6845,24 +7129,24 @@ type (
 		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
 		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
 		ChannelMonitorRequestTemplate, CompositeModelRoute, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		FederationOutbox, FederationUsageCursor, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
 		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
 		ChannelMonitorRequestTemplate, CompositeModelRoute, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		FederationOutbox, FederationUsageCursor, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

@@ -2676,3 +2676,22 @@ func TestLoad_DefaultGatewayImageStreamConfig(t *testing.T) {
 		t.Fatalf("image stream timeout = %d, want greater than ordinary stream timeout %d", cfg.Gateway.ImageStreamDataIntervalTimeout, cfg.Gateway.StreamDataIntervalTimeout)
 	}
 }
+
+func TestLoadFederationFlagsDefaultOffAndBindEnvironment(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.False(t, cfg.Federation.OutboxEnabled)
+	require.False(t, cfg.Federation.AdmissionCheckEnabled)
+	require.False(t, cfg.Federation.AcceptPasswordHash)
+
+	resetViperWithJWTSecret(t)
+	t.Setenv("FEDERATION_OUTBOX_ENABLED", "true")
+	t.Setenv("FEDERATION_ADMISSION_CHECK_ENABLED", "true")
+	t.Setenv("FEDERATION_ACCEPT_PASSWORD_HASH", "true")
+	cfg, err = Load()
+	require.NoError(t, err)
+	require.True(t, cfg.Federation.OutboxEnabled)
+	require.True(t, cfg.Federation.AdmissionCheckEnabled)
+	require.True(t, cfg.Federation.AcceptPasswordHash)
+}

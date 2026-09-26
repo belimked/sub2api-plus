@@ -105,6 +105,30 @@ type Config struct {
 	BatchImage              BatchImageConfig              `mapstructure:"batch_image"`
 	ImageStorage            ImageStorageConfig            `mapstructure:"image_storage"`
 	Plugins                 PluginConfig                  `mapstructure:"plugins"`
+	Federation              FederationConfig              `mapstructure:"federation"`
+}
+
+// FederationConfig controls the mainland/overseas billing federation outbox
+// and admission check (see sub2api-federation-design.md and
+// openspec/changes/federation-admission-check/). Disabled by default: it must
+// never change request-admission behavior for a deployment that isn't
+// participating in federation.
+type FederationConfig struct {
+	// OutboxEnabled: when true, user identity and balance changes write
+	// federation_outbox_events rows for the mainland federation-pusher to
+	// deliver. Enable only on the mainland (balance source-of-truth) node;
+	// off, no outbox rows are written and billing does no extra queries.
+	OutboxEnabled bool `mapstructure:"outbox_enabled"`
+	// AdmissionCheckEnabled: when true, the API key auth middleware computes
+	// available balance as balance - Σ(local usage_log.actual_cost since
+	// federation_usage_watermark_seq) instead of using balance directly.
+	AdmissionCheckEnabled bool `mapstructure:"admission_check_enabled"`
+	// AcceptPasswordHash: when true, the admin endpoint
+	// POST /api/v1/admin/users/:id/federation-password-hash accepts a bcrypt
+	// hash from the mainland federation-pusher and stores it verbatim, so a
+	// federated user logs in here with their mainland password. Enable only
+	// on the overseas node; off, the endpoint answers 404.
+	AcceptPasswordHash bool `mapstructure:"accept_password_hash"`
 }
 
 // PluginConfig 控制管理员手动上传的本地进程插件。
@@ -2398,6 +2422,9 @@ func setDefaults() {
 	viper.SetDefault("gateway.openai_ws.http_bridge_threshold_bytes", 15*1024*1024)
 	viper.SetDefault("gateway.openai_ws.responses_websockets", false)
 	viper.SetDefault("gateway.openai_ws.responses_websockets_v2", true)
+	viper.SetDefault("federation.admission_check_enabled", false)
+	viper.SetDefault("federation.outbox_enabled", false)
+	viper.SetDefault("federation.accept_password_hash", false)
 	viper.SetDefault("gateway.openai_ws.max_conns_per_account", 128)
 	viper.SetDefault("gateway.openai_ws.min_idle_per_account", 4)
 	viper.SetDefault("gateway.openai_ws.max_idle_per_account", 12)

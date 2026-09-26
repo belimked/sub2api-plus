@@ -30,6 +30,7 @@ func (User) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		mixins.TimeMixin{},
 		mixins.SoftDeleteMixin{},
+		mixins.FederationOutboxMixin{},
 	}
 }
 
@@ -119,6 +120,14 @@ func (User) Fields() []ent.Field {
 
 		// 用户级每分钟请求数上限（0 = 不限制）。仅当所在分组未设置 rpm_limit 时作为兜底生效。
 		field.Int("rpm_limit").
+			Default(0),
+
+		// 联邦水位（POC）：本地 balance 已经反映到对端 usage_log 的哪个 id 为止。
+		// 大陆侧：federation-usage-tailer 成功扣款后单调递增。
+		// 海外侧：收到大陆 balance.snapshot 时随快照一起写入。
+		// 只做数据记录，当前不参与任何请求准入判断——见
+		// openspec/changes/federation-balance-sync/proposal.md。
+		field.Int64("federation_usage_watermark_seq").
 			Default(0),
 	}
 }
