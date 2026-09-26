@@ -9,7 +9,7 @@ import (
 )
 
 func TestClaudeCodeAccountIdentitiesMigration(t *testing.T) {
-	content, err := FS.ReadFile("269_claude_code_account_identities.sql")
+	content, err := FS.ReadFile("271_claude_code_account_identities.sql")
 	require.NoError(t, err)
 	migration := string(content)
 	require.Contains(t, migration, "CREATE TABLE IF NOT EXISTS claude_code_account_identities")

@@ -1,24 +1,34 @@
-Sub2API Plus v0.2.5+custom.001
+Sub2API Plus v0.2.8+custom.001
 
 ## Highlights
 
-First Plus release on official `v0.2.5`. It keeps Plus identity, ingress audit, session/quota accounting, and retired billing probes, while aligning Codex OAuth outbound with the official CLI and importing the official DeepSeek, quota-window, Responses sequence_number, Antigravity SSE, and API-key provider-filter fixes. Codex model-visible time now follows the egress location via the environment_context timezone rewrite, with a four-level resolution chain (account extra > proxy egress annotation > global setting > off).
+Second Plus release on the official `v0.2.8` baseline. It keeps Plus identity,
+ingress audit, session/quota accounting, proxy egress metadata, and retired
+billing probes, while importing the official GPT-6 Sol/Luna, Claude Opus 5.5,
+and Grok 4.7 model support, the OpenCode Go official usage window with
+automatic refresh, configurable reasoning-effort billing multipliers, automatic
+Claude Code client version synchronization, simple-mode API key consumption
+windows, monthly backup archives, offline affiliate withdrawal registration,
+rolling log retention, and Codex credits display. Plus adds three rounds of
+Codex OAuth outbound alignment with the official `codex-rs` client on top of
+this baseline.
 
 ## Changed
 
-- Default Codex originator is `codex_cli_rs`. Inference still sends the Plus User-Agent, Originator, and Version triple with the Ubuntu fingerprint.
-- OAuth authorize, raw token exchange, JSON refresh, device-code, and revoke follow official Codex clients. Login no longer PATCHes ChatGPT training.
-- `off`/`device` fingerprint modes emit official `session-id` and `thread-id` only; `session`/`full` still emit legacy aliases.
-- Shared upstream capacity shed (OpenAI overloaded/slow_down, Anthropic 529, Grok model capacity, Antigravity MODEL_CAPACITY_EXHAUSTED) returns immediately without same-account retry or failover. Codex-fatal `server_is_overloaded` is still rewritten to `server_error`.
-- Official v0.2.5 DeepSeek empty-mapping whitelist, canonical Codex 5h/7d quota reads, Responses `sequence_number` emission, Antigravity Gemini SSE separator fix, and API-key provider filtering.
-- OpenCode Zen/GO accounts, native Codex Images for OAuth, WebSocket execution-scope pooling, and bulk admin actions from the unpublished 0.2.4 overlay.
-- Codex session aliases follow the official client: `conversation_id` is never emitted, `session_id` remains a Plus compatibility alias for `session`/`full` fingerprints and API-key traffic, and auxiliary APIs use the plain shared client without Firefox TLS impersonation.
-- Device-code re-auth binds the OAuth session to the target account server-side; account deletion best-effort revokes upstream tokens.
-- Proxy management adds optional egress timezone (IANA) and country (ISO 3166-1 alpha-2) annotations driving the timezone rewrite chain.
+- New model support: GPT-6 Sol, GPT-6 Luna, Claude Opus 5.5, and Grok 4.7.
+- OpenCode Go usage window: official quota query, automatic refresh, same-key group sharing, manual query, and account list/usage-cell balance badges (7d/1m); the `/zen/go` base-variant quota endpoint is normalized and usage state survives account updates.
+- Billing: per-channel reasoning-effort multipliers, final reasoning effort preserved across forwarding paths, and scientific notation at token boundaries parsed.
+- Claude Code client version numbers are synchronized automatically.
+- Simple mode can enable API key consumption window limits; first-start default group creation is now optional.
+- Backups support monthly archive with an independent retention policy.
+- Affiliate offline withdrawals are registered idempotently via Idempotency-Key.
+- Rolling log retention is configurable.
+- Official tool-schema cleaning strips illegal null `required` and `prefixItems`/tuple arrays; Antigravity resolves bare Gemini model names to thinking variants at every forwarding entry; streaming ends on the terminal event without waiting for upstream EOF.
+- Plus closes Codex OAuth outbound divergences across custom-CA rotation on the HTTP and auth-plane client pools, WebSocket metadata header handling, credits-only rate-limit events, `include:["reasoning.encrypted_content"]` merges, transport-refusal handling, and rollout budget unit recording.
 
 ## Compatibility and migration
 
-Migrations 266, 267, and 268 add OpenCode platform constraints, delete unlimited (all-NULL) user platform quota rows, and add proxy egress region annotations. Back up the database before upgrade. Rollback image is `v0.2.4+custom.005`.
+Migrations 269 and 270 add per-usage `codex_rollout_budget_units` and the idempotent affiliate withdrawal `operation_id`. Back up the database before upgrade. Rollback image is `v0.2.5+custom.001`.
 
 ## Known issues
 
@@ -26,5 +36,5 @@ None.
 
 ## Upstream baseline
 
-Official release: v0.2.5
-Official commit: 86f93c28ee34cc74b629dafb748bd5ac5ca8c5ea
+Official release: v0.2.8
+Official commit: fd80b08c90b55edcad5b00171b53f08721d30da1

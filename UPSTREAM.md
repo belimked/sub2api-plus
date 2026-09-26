@@ -5,23 +5,28 @@ procedures are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Integrated Baseline
 
-The current integration tree incorporates the official `v0.2.5` tag at commit
-`86f93c28ee34cc74b629dafb748bd5ac5ca8c5ea`, layered onto the Plus history.
+The current integration tree incorporates the official `v0.2.8` tag at commit
+`fd80b08c90b55edcad5b00171b53f08721d30da1`, layered onto the Plus history.
 The release mapping below remains the authoritative record of publication
 status; importing an upstream tag does not publish a Plus release or change the
 embedded application version by itself.
 Plus version/tag/image promotion remains a separate step.
 
 Plus retains credential-owner identity precedence, ingress content audit,
-session and quota accounting, asynchronous images, administrator export
-controls, IP access controls, and distribution/toolchain choices. Retired
-upstream billing probes remain removed. Grok cross-client rewriting stays
-opt-in, and inconclusive OAuth billing does not grant media eligibility.
+session and quota accounting, proxy egress metadata annotations, asynchronous
+images, administrator export controls, IP access controls, and
+distribution/toolchain choices. Retired upstream billing probes remain removed.
+Grok cross-client rewriting stays opt-in, and inconclusive OAuth billing does
+not grant media eligibility.
 
 See [v0.2.4 integration and upgrade behavior](docs/UPSTREAM_V0_2_4_INTEGRATION.md)
 for the previous overlay's public API changes, migrations, defaults, and
 validation boundaries. See [v0.2.5 integration](docs/UPSTREAM_V0_2_5_INTEGRATION.md)
-for the official tag import on that tree.
+for the official tag import on that tree. See
+[v0.2.7 integration](docs/UPSTREAM_V0_2_7_INTEGRATION.md) for the previous
+official tag import. See
+[v0.2.8 integration](docs/UPSTREAM_V0_2_8_INTEGRATION.md) for the latest
+official tag import.
 
 ## Release Mapping
 
@@ -82,6 +87,8 @@ for the official tag import on that tree.
 | `v0.2.4+custom.005` | `v0.2.4` | `5de5e2bed035d43591a2e10e51f420ef6a84eb98` | published |
 | `v0.2.4+custom.006` | `v0.2.4` | `badfad8b7248b8aac0e6b503a06e392aa31cb294` | withdrawn |
 | `v0.2.5+custom.001` | `v0.2.5` | `86f93c28ee34cc74b629dafb748bd5ac5ca8c5ea` | published |
+| `v0.2.7+custom.001` | `v0.2.7` | `aea725f2ea644d5592d0bbb1d63b607efa7e200a` | planned |
+| `v0.2.8+custom.001` | `v0.2.8` | `fd80b08c90b55edcad5b00171b53f08721d30da1` | published |
 
 `v0.2.4+custom.006` is marked withdrawn because official `v0.2.5` was imported before that snapshot overlay was published. Do not reuse or retag `.006`.
 
@@ -92,9 +99,9 @@ still require a maintainer audit. Do not reuse or retag `.007`.
 ## Current Version
 
 ```text
-Git/GitHub: v0.2.5+custom.001
-Application: 0.2.5+custom.001
-GHCR: ghcr.io/luckykuang/sub2api-plus:v0.2.5-custom.001
+Git/GitHub: v0.2.8+custom.001
+Application: 0.2.8+custom.001
+GHCR: ghcr.io/luckykuang/sub2api-plus:v0.2.8-custom.001
 ```
 
 ## Naming
@@ -124,3 +131,31 @@ same release-preparation change.
 Historical `-custom.NNN` Git naming was migrated to the canonical
 `+custom.NNN` form. OCI tags continue to use `-custom.NNN` because OCI tags do
 not support `+`.
+
+## belimked Fork
+
+`https://github.com/belimked/sub2api-plus` is a deployment fork of Sub2API Plus
+for one mainland and one overseas site. It tracks `LuckyKuang/sub2api-plus`
+`main`; the current baseline is `d1b297381` (`v0.2.8+custom.001`). Sync by
+merging that branch; do not publish Plus releases or tags from this fork.
+
+Fork-only changes to preserve on every merge:
+
+- Mainland/overseas federation (see [`docs/FEDERATION.md`](docs/FEDERATION.md)):
+  outbox, balance emitters, `cmd/federation-pusher`,
+  `cmd/federation-usage-tailer`, admission check and `federation.*` config.
+  Everything is off by default.
+- Claude Code account identity and device ID persistence.
+- The user API-key dialog selects a group directly, without the upstream
+  provider step (`KeysView.vue`).
+- `.github/workflows/belimked-image.yml` publishes
+  `ghcr.io/belimked/sub2api-plus:main` and `:sha-<commit>`; the `Dockerfile`
+  also builds both federation sidecar binaries.
+
+Fork migrations continue after the highest upstream prefix. They were first
+deployed under other names (`269_claude_code_account_identities.sql`,
+`270`–`273_federation_*.sql`) and renumbered to `271`–`275` when merging
+`v0.2.8`, which introduced its own `269` and `270`. They are idempotent, so
+databases that applied the old names only re-run them as no-ops. When a future
+upstream merge adds migrations at or above `271`, renumber the fork migrations
+above the new maximum the same way.
