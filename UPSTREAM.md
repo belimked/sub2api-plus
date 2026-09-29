@@ -131,3 +131,31 @@ same release-preparation change.
 Historical `-custom.NNN` Git naming was migrated to the canonical
 `+custom.NNN` form. OCI tags continue to use `-custom.NNN` because OCI tags do
 not support `+`.
+
+## belimked Fork
+
+`https://github.com/belimked/sub2api-plus` is a deployment fork of Sub2API Plus
+for one mainland and one overseas site. It tracks `LuckyKuang/sub2api-plus`
+`main`; the current baseline is `d1b297381` (`v0.2.8+custom.001`). Sync by
+merging that branch; do not publish Plus releases or tags from this fork.
+
+Fork-only changes to preserve on every merge:
+
+- Mainland/overseas federation (see [`docs/FEDERATION.md`](docs/FEDERATION.md)):
+  outbox, balance emitters, `cmd/federation-pusher`,
+  `cmd/federation-usage-tailer`, admission check and `federation.*` config.
+  Everything is off by default.
+- Claude Code account identity and device ID persistence.
+- The user API-key dialog selects a group directly, without the upstream
+  provider step (`KeysView.vue`).
+- `.github/workflows/belimked-image.yml` publishes
+  `ghcr.io/belimked/sub2api-plus:main` and `:sha-<commit>`; the `Dockerfile`
+  also builds both federation sidecar binaries.
+
+Fork migrations continue after the highest upstream prefix. They were first
+deployed under other names (`269_claude_code_account_identities.sql`,
+`270`–`273_federation_*.sql`) and renumbered to `271`–`275` when merging
+`v0.2.8`, which introduced its own `269` and `270`. They are idempotent, so
+databases that applied the old names only re-run them as no-ops. When a future
+upstream merge adds migrations at or above `271`, renumber the fork migrations
+above the new maximum the same way.

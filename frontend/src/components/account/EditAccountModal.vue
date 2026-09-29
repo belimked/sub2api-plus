@@ -12,6 +12,7 @@
       class="space-y-5"
     >
       <OutboundIdentityEditor v-model="outboundIdentitySelection" :platform="props.account?.platform || ''" :account-type="props.account?.type || ''" :codex-user-agent="openaiAccountUserAgent" />
+      <ClaudeDeviceIdField v-model="claudeDeviceId" :platform="props.account?.platform || ''" :type="props.account?.type || ''" />
       <div>
         <label class="input-label">{{ t('common.name') }}</label>
         <input v-model="form.name" type="text" required class="input" data-tour="edit-account-form-name" />
@@ -2749,6 +2750,8 @@ import { getTimezoneOptions } from '@/utils/timezones'
 import { getCountryOptions } from '@/utils/countries'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import UpstreamRequestIdHeaderField from '@/components/account/UpstreamRequestIdHeaderField.vue'
+import ClaudeDeviceIdField from '@/components/account/ClaudeDeviceIdField.vue'
+import { isClaudeDeviceId, normalizeClaudeDeviceId, supportsClaudeDeviceId } from '@/components/account/claudeDeviceId'
 import Toggle from '@/components/common/Toggle.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
@@ -3211,6 +3214,7 @@ const customBaseUrl = ref('')
 const openaiPassthroughEnabled = ref(false)
 const openaiAccountUserAgent = ref('')
 const outboundIdentitySelection = ref<IdentitySelection | null>(null)
+const claudeDeviceId = ref('')
 const openaiOAuthSessionSharingEnabled = ref(false)
 // OpenAI Codex namespace 工具摊平兼容开关（仅 OAuth），缺省关闭即原样保留
 const openaiFlattenNamespacesEnabled = ref(false)
@@ -3658,6 +3662,8 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   mixedChannelWarningAction.value = null
   form.name = newAccount.name
   outboundIdentitySelection.value = (newAccount.credentials?.outbound_identity as IdentitySelection | undefined) || null
+  const storedDeviceId = newAccount.credentials?.claude_user_id
+  claudeDeviceId.value = typeof storedDeviceId === 'string' ? storedDeviceId : ''
   form.notes = newAccount.notes || ''
   form.proxy_id = newAccount.proxy_id
   form.concurrency = newAccount.concurrency
@@ -4639,6 +4645,19 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
     const credentials = (updatePayload.credentials || { ...props.account.credentials }) as Record<string, unknown>
     credentials.outbound_identity = outboundIdentitySelection.value || null
     updatePayload.credentials = credentials
+  }
+  if (props.account && supportsClaudeDeviceId(props.account.platform, props.account.type)) {
+    if (!isClaudeDeviceId(claudeDeviceId.value)) {
+      appStore.showError(t('admin.accounts.claudeDeviceId.invalid'))
+      return
+    }
+    const deviceId = normalizeClaudeDeviceId(claudeDeviceId.value)
+    if (deviceId || props.account.credentials?.claude_user_id) {
+      const credentials = (updatePayload.credentials || { ...props.account.credentials }) as Record<string, unknown>
+      if (deviceId) credentials.claude_user_id = deviceId
+      else delete credentials.claude_user_id
+      updatePayload.credentials = credentials
+    }
   }
   submitting.value = true
   try {

@@ -46,6 +46,7 @@
       class="space-y-5"
     >
       <OutboundIdentityEditor v-model="outboundIdentitySelection" :platform="form.platform" :account-type="form.type" :codex-user-agent="openaiAccountUserAgent" />
+      <ClaudeDeviceIdField v-model="claudeDeviceId" :platform="form.platform" :type="form.type" />
       <div>
         <label class="input-label">{{ t('admin.accounts.accountName') }}</label>
         <input
@@ -3670,6 +3671,8 @@ import { getTimezoneOptions } from '@/utils/timezones'
 import { getCountryOptions } from '@/utils/countries'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import UpstreamRequestIdHeaderField from '@/components/account/UpstreamRequestIdHeaderField.vue'
+import ClaudeDeviceIdField from '@/components/account/ClaudeDeviceIdField.vue'
+import { isClaudeDeviceId, normalizeClaudeDeviceId, supportsClaudeDeviceId } from '@/components/account/claudeDeviceId'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
@@ -4167,6 +4170,7 @@ const autoPauseOnExpired = ref(true)
 const openaiPassthroughEnabled = ref(false)
 const openaiAccountUserAgent = ref('')
 const outboundIdentitySelection = ref<IdentitySelection | null>(null)
+const claudeDeviceId = ref('')
 const openaiOAuthSessionSharingEnabled = ref(false)
 // OpenAI Codex namespace 工具摊平兼容开关（仅 OAuth），缺省关闭即原样保留
 const openaiFlattenNamespacesEnabled = ref(false)
@@ -4990,10 +4994,17 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
   }
 }
 
-const createAccountWithOutboundIdentity = (payload: CreateAccountRequest) => adminAPI.accounts.create({
-  ...payload,
-  credentials: { ...payload.credentials, ...(outboundIdentitySelection.value ? { outbound_identity: outboundIdentitySelection.value } : {}) }
-})
+const createAccountWithOutboundIdentity = (payload: CreateAccountRequest) => {
+  const deviceId = supportsClaudeDeviceId(payload.platform, payload.type) ? normalizeClaudeDeviceId(claudeDeviceId.value) : ''
+  return adminAPI.accounts.create({
+    ...payload,
+    credentials: {
+      ...payload.credentials,
+      ...(outboundIdentitySelection.value ? { outbound_identity: outboundIdentitySelection.value } : {}),
+      ...(deviceId ? { claude_user_id: deviceId } : {})
+    }
+  })
+}
 
 const submitCreateAccount = async (payload: CreateAccountRequest) => {
   submitting.value = true
@@ -5098,6 +5109,7 @@ const resetForm = () => {
   openaiPassthroughEnabled.value = false
   openaiAccountUserAgent.value = ''
   outboundIdentitySelection.value = null
+  claudeDeviceId.value = ''
   openaiOAuthSessionSharingEnabled.value = false
   openaiFlattenNamespacesEnabled.value = false
   openAILongContextBillingEnabled.value = false
@@ -5399,6 +5411,10 @@ const handleVertexServiceAccountDrop = async (event: DragEvent) => {
 }
 
 const handleSubmit = async () => {
+  if (supportsClaudeDeviceId(form.platform, form.type) && !isClaudeDeviceId(claudeDeviceId.value)) {
+    appStore.showError(t('admin.accounts.claudeDeviceId.invalid'))
+    return
+  }
   // For OAuth-based type, handle OAuth flow (goes to step 2)
   if (isOAuthFlow.value) {
     if (!isGrokSSOInputMethod.value && !form.name.trim()) {
@@ -6820,6 +6836,11 @@ const handleCookieAuth = async (sessionKey: string) => {
 
     if (keys.length === 0) {
       oauth.error.value = t('admin.accounts.oauth.pleaseEnterSessionKey')
+      return
+    }
+    // One device ID must not be shared by the accounts of a batch.
+    if (keys.length > 1 && normalizeClaudeDeviceId(claudeDeviceId.value)) {
+      oauth.error.value = t('admin.accounts.claudeDeviceId.singleAccountOnly')
       return
     }
 

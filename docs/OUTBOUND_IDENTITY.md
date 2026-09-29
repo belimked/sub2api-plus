@@ -49,6 +49,57 @@ to a copy of the trusted request snapshot, without changing the parent snapshot.
 Invalid candidates fall through atomically. An explicit account version retains
 its selected source and OS/architecture, and does not update the privacy SDK.
 
+## Claude Code account device
+
+Each Anthropic OAuth or setup-token account keeps one private Claude Code
+device ID (64 lowercase hexadecimal characters) in
+`claude_code_account_identities`. It is the device part of every generated or
+rewritten outbound `metadata.user_id` on Claude paths, including messages,
+token counting and the Chat Completions/Responses adapters, so Redis eviction
+and restarts do not rotate it. The first stored value adopts the valid device
+already cached in Redis, so an upgrade does not change active accounts;
+otherwise a random ID is generated. Each process reads the database once per
+account and the Redis fingerprint caches the stored value. While the database
+is unavailable, requests continue with the cached device and the next request
+retries persistence. Other account types keep the cache-only device ID.
+Metadata passthrough still forwards client metadata unchanged.
+
+Administrators may set an account device in the account editor, stored as
+`credentials.claude_user_id`. Selection is: a valid account device → the
+persisted device → a newly generated and persisted device. The management API
+lowercases the value and rejects anything other than 64 hexadecimal characters
+with `CLAUDE_DEVICE_ID_INVALID`; a blank value clears it (bulk updates store an
+explicit null). The account device applies to outbound requests only: the
+persisted device and Redis fingerprint are unchanged, so clearing the setting
+restores the previous device. `extra.claude_user_id` and `anthropic_user_id`
+are not device sources.
+
+The persisted device ID is not returned by account APIs, and its persistence
+logs record only the account ID.
+
+### `metadata.user_id` and request IDs
+
+`metadata.user_id` is `{"device_id","account_uuid","session_id"}` for Claude
+Code 2.1.78 and later, and `user_{device}_account_{uuid}_session_{session}`
+before that. The device ID is copied verbatim; `account_uuid` comes from the
+Anthropic account. The session part depends on the request:
+
+| Request | `session_id` |
+| --- | --- |
+| Claude Code client that sends metadata | UUID derived from SHA-256 of `<account ID>::<client session>` |
+| Gateway-generated on `/v1/messages` | Derived from the account ID, client IP, normalized User-Agent, API key ID and first user message |
+| Gateway-generated on the Chat Completions/Responses adapters | Derived from the account ID, device ID and first user message, so changing the device changes these sessions |
+| Session ID masking enabled | Random UUID per account, replaced after 15 minutes without requests |
+
+Request IDs are per request and never derive from the device, persist, or act
+as account identity:
+
+| Identifier | Source |
+| --- | --- |
+| `x-client-request-id` (sent to Anthropic) | The client's value when present; otherwise a new random UUID for each upstream request |
+| `request-id` (Anthropic response) | Issued by Anthropic |
+| `X-Request-ID` (gateway correlation) | A valid inbound value, otherwise a new random UUID |
+
 ## Selection and persistence
 
 For non-Codex identities, selection is:

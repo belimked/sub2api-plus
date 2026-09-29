@@ -53,6 +53,10 @@ type APIKeyAuthUserSnapshot struct {
 	// UserGroupRPMOverride 该 API Key 对应的 (user, group) 专属 RPM 覆盖值。
 	// nil = 无 override（回退到 group/user 级）；0 = 不限流；>0 = 专属上限。
 	UserGroupRPMOverride *int `json:"user_group_rpm_override,omitempty"`
+
+	// FederationUsageWatermarkSeq 联邦准入检查用的水位（见 federation_admission.go）。
+	// 缺失会让缓存命中的请求按水位 0 计算，把全部历史用量当作未同步用量扣掉。
+	FederationUsageWatermarkSeq int64 `json:"federation_usage_watermark_seq"`
 }
 
 // APIKeyAuthGroupSnapshot 分组快照

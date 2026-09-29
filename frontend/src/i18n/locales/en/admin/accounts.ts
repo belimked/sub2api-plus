@@ -540,6 +540,13 @@ export default {
       apiKeyRequired: 'API Key *',
       apiKeyPlaceholder: 'sk-ant-api03-...',
       apiKeyHint: 'Your Claude Console API Key',
+      claudeDeviceId: {
+        label: 'Device ID',
+        placeholder: 'Leave empty to use the generated device',
+        hint: '64 hexadecimal characters, saved in lowercase. Leave empty to use the device ID the gateway generated and persisted for this account. Changing it makes the upstream see a different device; do not reuse one value across accounts.',
+        invalid: 'Must be 64 hexadecimal characters',
+        singleAccountOnly: 'A device ID can only be set when adding one account; accounts must not share a device ID'
+      },
       upstreamRequestIdHeader: 'Upstream ID',
       upstreamRequestIdHeaderPlaceholder: 'Leave empty to record nothing',
       upstreamRequestIdHeaderHelp: {

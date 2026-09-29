@@ -329,6 +329,9 @@ func (s *adminServiceImpl) DuplicateAccount(ctx context.Context, id int64, actor
 	if err := s.normalizeOpenAIAccountUserAgent(ctx, source.Platform, source.Type, input.Credentials); err != nil {
 		return nil, err
 	}
+	if err := NormalizeClaudeCodeDeviceCredential(input.Credentials); err != nil {
+		return nil, err
+	}
 	if err := NormalizeOpenCodeGoProtocolRulesCredentials(input.Credentials); err != nil {
 		return nil, err
 	}
@@ -531,6 +534,9 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 	if err := s.normalizeOpenAIAccountUserAgent(ctx, input.Platform, input.Type, input.Credentials); err != nil {
 		return nil, err
 	}
+	if err := NormalizeClaudeCodeDeviceCredential(input.Credentials); err != nil {
+		return nil, err
+	}
 
 	account, err := buildAccountForCreate(input, accountExtra)
 	if err != nil {
@@ -693,6 +699,9 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		// Strip SSO/password residue that must never sit next to OAuth tokens.
 		account.Credentials = SanitizeStoredCredentials(account.Platform, account.Credentials)
 		if err := s.normalizeOpenAIAccountUserAgent(ctx, account.Platform, account.Type, account.Credentials); err != nil {
+			return nil, err
+		}
+		if err := NormalizeClaudeCodeDeviceCredential(account.Credentials); err != nil {
 			return nil, err
 		}
 	}
@@ -1129,6 +1138,15 @@ func (s *adminServiceImpl) BulkUpdateAccounts(ctx context.Context, input *BulkUp
 	}
 	if err := normalizeBulkAccountOutboundIdentity(input.Credentials, cachedTargets); err != nil {
 		return nil, err
+	}
+	if _, supplied := input.Credentials[claudeCodeDeviceCredential]; supplied {
+		if err := NormalizeClaudeCodeDeviceCredential(input.Credentials); err != nil {
+			return nil, err
+		}
+		if _, kept := input.Credentials[claudeCodeDeviceCredential]; !kept {
+			// Bulk persistence merges top-level keys; an explicit null clears the override.
+			input.Credentials[claudeCodeDeviceCredential] = nil
+		}
 	}
 	if raw, supplied := input.Credentials["user_agent"]; supplied {
 		for _, account := range cachedTargets {

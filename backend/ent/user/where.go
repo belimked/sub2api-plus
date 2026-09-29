@@ -180,6 +180,11 @@ func RpmLimit(v int) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldRpmLimit, v))
 }
 
+// FederationUsageWatermarkSeq applies equality check predicate on the "federation_usage_watermark_seq" field. It's identical to FederationUsageWatermarkSeqEQ.
+func FederationUsageWatermarkSeq(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldFederationUsageWatermarkSeq, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -1398,6 +1403,46 @@ func RpmLimitLT(v int) predicate.User {
 // RpmLimitLTE applies the LTE predicate on the "rpm_limit" field.
 func RpmLimitLTE(v int) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldRpmLimit, v))
+}
+
+// FederationUsageWatermarkSeqEQ applies the EQ predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldFederationUsageWatermarkSeq, v))
+}
+
+// FederationUsageWatermarkSeqNEQ applies the NEQ predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqNEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldFederationUsageWatermarkSeq, v))
+}
+
+// FederationUsageWatermarkSeqIn applies the In predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldFederationUsageWatermarkSeq, vs...))
+}
+
+// FederationUsageWatermarkSeqNotIn applies the NotIn predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqNotIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldFederationUsageWatermarkSeq, vs...))
+}
+
+// FederationUsageWatermarkSeqGT applies the GT predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqGT(v int64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldFederationUsageWatermarkSeq, v))
+}
+
+// FederationUsageWatermarkSeqGTE applies the GTE predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqGTE(v int64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldFederationUsageWatermarkSeq, v))
+}
+
+// FederationUsageWatermarkSeqLT applies the LT predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqLT(v int64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldFederationUsageWatermarkSeq, v))
+}
+
+// FederationUsageWatermarkSeqLTE applies the LTE predicate on the "federation_usage_watermark_seq" field.
+func FederationUsageWatermarkSeqLTE(v int64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldFederationUsageWatermarkSeq, v))
 }
 
 // HasAPIKeys applies the HasEdge predicate on the "api_keys" edge.

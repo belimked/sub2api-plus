@@ -4,6 +4,7 @@ package service
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,22 +44,41 @@ func TestBuildOAuthMetadataUserID_UsesAccountUUIDWhenPresent(t *testing.T) {
 		MetadataUserID: "",
 	}
 
+	const configuredDevice = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 	account := &Account{
-		ID:   123,
-		Type: AccountTypeOAuth,
-		Extra: map[string]any{
-			"account_uuid":      "acc-uuid",
-			"claude_user_id":    "clientid123",
-			"anthropic_user_id": "",
-		},
+		ID:          123,
+		Platform:    PlatformAnthropic,
+		Type:        AccountTypeOAuth,
+		Credentials: map[string]any{"claude_user_id": strings.ToUpper(configuredDevice)},
+		Extra:       map[string]any{"account_uuid": "acc-uuid"},
 	}
 
 	got := svc.buildOAuthMetadataUserID(parsed, account, nil)
 	require.NotEmpty(t, got)
 
 	// New format: user_{client}_account_{account_uuid}_session_{uuid}
-	re := regexp.MustCompile(`^user_clientid123_account_acc-uuid_session_[a-f0-9-]{36}$`)
+	re := regexp.MustCompile(`^user_` + configuredDevice + `_account_acc-uuid_session_[a-f0-9-]{36}$`)
 	require.True(t, re.MatchString(got), "unexpected user_id format: %s", got)
+}
+
+func TestBuildOAuthMetadataUserID_IgnoresUnusableDeviceOverride(t *testing.T) {
+	svc := &GatewayService{}
+	parsed := &ParsedRequest{Model: "claude-sonnet-4-5"}
+	fp := &Fingerprint{ClientID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+
+	for name, account := range map[string]*Account{
+		"malformed_credential": {ID: 1, Platform: PlatformAnthropic, Type: AccountTypeOAuth,
+			Credentials: map[string]any{"claude_user_id": "clientid123"}},
+		"legacy_extra_location": {ID: 2, Platform: PlatformAnthropic, Type: AccountTypeOAuth,
+			Extra: map[string]any{"claude_user_id": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"}},
+		"non_anthropic_account": {ID: 3, Platform: PlatformGemini, Type: AccountTypeOAuth,
+			Credentials: map[string]any{"claude_user_id": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := svc.buildOAuthMetadataUserID(parsed, account, fp)
+			require.True(t, strings.HasPrefix(got, "user_"+fp.ClientID+"_account_"), "unexpected user_id: %s", got)
+		})
+	}
 }
 
 // TestBuildOAuthMetadataUserID_SessionIDStableAcrossTurns 验证伪装路径合成的

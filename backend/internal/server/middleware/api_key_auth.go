@@ -256,7 +256,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 				}
 			} else {
 				// 非订阅模式 或 订阅模式但 subscriptionService 未注入：回退到余额检查
-				if apiKeyBalanceBelowAuthThreshold(apiKey.User.Balance, cfg) {
+				if apiKeyBalanceBelowAuthThreshold(c.Request.Context(), apiKey.User, cfg) {
 					AbortWithError(c, 403, "INSUFFICIENT_BALANCE", "Insufficient account balance")
 					return
 				}
@@ -402,7 +402,15 @@ func setGroupContext(c *gin.Context, group *service.Group) {
 // apiKeyBalanceBelowAuthThreshold 保持鉴权层的历史语义：仅在余额耗尽（<=0）时拒绝。
 // MinimumBalanceReserve 只作为 billing-cache 预检的保守下限，不得复用为鉴权硬门槛，
 // 否则已配置该值的存量部署升级后，0 < balance < reserve 的用户会在所有端点被静默 403。
-func apiKeyBalanceBelowAuthThreshold(balance float64, _ *config.Config) bool {
+//
+// cfg.Federation.AdmissionCheckEnabled（默认 false）打开时，比较的不是原始
+// balance，而是水位公式算出的可用余额——见 federation_admission.go。未开启时
+// 行为与之前完全一致。
+func apiKeyBalanceBelowAuthThreshold(ctx context.Context, u *service.User, cfg *config.Config) bool {
+	balance := u.Balance
+	if cfg != nil && cfg.Federation.AdmissionCheckEnabled {
+		balance = federationAvailableBalance(ctx, u.ID, u.Balance, u.FederationUsageWatermarkSeq)
+	}
 	return balance <= 0
 }
 

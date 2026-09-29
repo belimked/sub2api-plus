@@ -54,6 +54,12 @@ type CompositeModelRoute func(*sql.Selector)
 // ErrorPassthroughRule is the predicate function for errorpassthroughrule builders.
 type ErrorPassthroughRule func(*sql.Selector)
 
+// FederationOutbox is the predicate function for federationoutbox builders.
+type FederationOutbox func(*sql.Selector)
+
+// FederationUsageCursor is the predicate function for federationusagecursor builders.
+type FederationUsageCursor func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 

@@ -1276,3 +1276,23 @@ image_storage:
   presign_expiry_hours: 24
   # 当上游返回的是图片 url 时，下载该图片再转存的字节上限（默认 32MB）
   max_download_bytes: 33554432
+
+# =============================================================================
+# Federation (大陆/海外计费联邦同步，POC)
+# =============================================================================
+# 两个开关都默认关闭；不参与联邦的部署保持默认即可，行为和性能与未引入联邦时一致。
+# 架构说明见 sub2api-federation-design.md。
+federation:
+  # 只在大陆主站（余额权威源、运行 federation-pusher 的节点）开启：
+  # 用户创建/邮箱/状态变更与余额变更会在同一事务里写 federation_outbox_events，
+  # 由 pusher 投递到海外。关闭时不写任何 outbox 行，计费路径也没有额外查询。
+  # 环境变量：FEDERATION_OUTBOX_ENABLED
+  outbox_enabled: false
+  # 只在海外站开启：准入时用 余额 - 水位之后本地尚未同步回大陆的用量 判断可用余额；
+  # 计算出错时回退到普通余额判断。环境变量：FEDERATION_ADMISSION_CHECK_ENABLED
+  admission_check_enabled: false
+  # 只在海外站开启：允许大陆 federation-pusher 通过
+  # POST /api/v1/admin/users/:id/federation-password-hash 写入 bcrypt 密码哈希，
+  # 联邦用户可用大陆密码登录海外。管理员账号永不同步。关闭时该接口返回 404。
+  # 环境变量：FEDERATION_ACCEPT_PASSWORD_HASH
+  accept_password_hash: false

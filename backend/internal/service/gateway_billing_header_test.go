@@ -122,7 +122,7 @@ func TestBuildOAuthRequest_BillingMatchesWireUserAgent(t *testing.T) {
 				if tc.identity {
 					svc.identityService = NewIdentityService(&stubIdentityCache{fingerprint: &Fingerprint{
 						UserAgent: cachedUA, ClientID: "test-client", UpdatedAt: time.Now().Unix(),
-					}})
+					}}, nil)
 				}
 				if tc.disableFP {
 					svc.settingService = NewSettingService(&gatewayTTLSettingRepo{data: map[string]string{

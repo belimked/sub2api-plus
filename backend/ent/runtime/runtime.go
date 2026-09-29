@@ -21,6 +21,8 @@ import (
 	"github.com/LuckyKuang/sub2api-plus/ent/channelmonitorrequesttemplate"
 	"github.com/LuckyKuang/sub2api-plus/ent/compositemodelroute"
 	"github.com/LuckyKuang/sub2api-plus/ent/errorpassthroughrule"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationoutbox"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationusagecursor"
 	"github.com/LuckyKuang/sub2api-plus/ent/group"
 	"github.com/LuckyKuang/sub2api-plus/ent/idempotencyrecord"
 	"github.com/LuckyKuang/sub2api-plus/ent/identityadoptiondecision"
@@ -986,6 +988,126 @@ func init() {
 	errorpassthroughruleDescSkipMonitoring := errorpassthroughruleFields[11].Descriptor()
 	// errorpassthroughrule.DefaultSkipMonitoring holds the default value on creation for the skip_monitoring field.
 	errorpassthroughrule.DefaultSkipMonitoring = errorpassthroughruleDescSkipMonitoring.Default.(bool)
+	federationoutboxMixin := schema.FederationOutbox{}.Mixin()
+	federationoutboxMixinFields0 := federationoutboxMixin[0].Fields()
+	_ = federationoutboxMixinFields0
+	federationoutboxFields := schema.FederationOutbox{}.Fields()
+	_ = federationoutboxFields
+	// federationoutboxDescCreatedAt is the schema descriptor for created_at field.
+	federationoutboxDescCreatedAt := federationoutboxMixinFields0[0].Descriptor()
+	// federationoutbox.DefaultCreatedAt holds the default value on creation for the created_at field.
+	federationoutbox.DefaultCreatedAt = federationoutboxDescCreatedAt.Default.(func() time.Time)
+	// federationoutboxDescUpdatedAt is the schema descriptor for updated_at field.
+	federationoutboxDescUpdatedAt := federationoutboxMixinFields0[1].Descriptor()
+	// federationoutbox.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	federationoutbox.DefaultUpdatedAt = federationoutboxDescUpdatedAt.Default.(func() time.Time)
+	// federationoutbox.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	federationoutbox.UpdateDefaultUpdatedAt = federationoutboxDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// federationoutboxDescAggregateType is the schema descriptor for aggregate_type field.
+	federationoutboxDescAggregateType := federationoutboxFields[0].Descriptor()
+	// federationoutbox.AggregateTypeValidator is a validator for the "aggregate_type" field. It is called by the builders before save.
+	federationoutbox.AggregateTypeValidator = func() func(string) error {
+		validators := federationoutboxDescAggregateType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(aggregate_type string) error {
+			for _, fn := range fns {
+				if err := fn(aggregate_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// federationoutboxDescAggregateID is the schema descriptor for aggregate_id field.
+	federationoutboxDescAggregateID := federationoutboxFields[1].Descriptor()
+	// federationoutbox.AggregateIDValidator is a validator for the "aggregate_id" field. It is called by the builders before save.
+	federationoutbox.AggregateIDValidator = func() func(string) error {
+		validators := federationoutboxDescAggregateID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(aggregate_id string) error {
+			for _, fn := range fns {
+				if err := fn(aggregate_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// federationoutboxDescEventType is the schema descriptor for event_type field.
+	federationoutboxDescEventType := federationoutboxFields[2].Descriptor()
+	// federationoutbox.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	federationoutbox.EventTypeValidator = func() func(string) error {
+		validators := federationoutboxDescEventType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(event_type string) error {
+			for _, fn := range fns {
+				if err := fn(event_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// federationoutboxDescStatus is the schema descriptor for status field.
+	federationoutboxDescStatus := federationoutboxFields[4].Descriptor()
+	// federationoutbox.DefaultStatus holds the default value on creation for the status field.
+	federationoutbox.DefaultStatus = federationoutboxDescStatus.Default.(string)
+	// federationoutbox.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	federationoutbox.StatusValidator = federationoutboxDescStatus.Validators[0].(func(string) error)
+	// federationoutboxDescAttempts is the schema descriptor for attempts field.
+	federationoutboxDescAttempts := federationoutboxFields[5].Descriptor()
+	// federationoutbox.DefaultAttempts holds the default value on creation for the attempts field.
+	federationoutbox.DefaultAttempts = federationoutboxDescAttempts.Default.(int)
+	federationusagecursorMixin := schema.FederationUsageCursor{}.Mixin()
+	federationusagecursorMixinFields0 := federationusagecursorMixin[0].Fields()
+	_ = federationusagecursorMixinFields0
+	federationusagecursorFields := schema.FederationUsageCursor{}.Fields()
+	_ = federationusagecursorFields
+	// federationusagecursorDescCreatedAt is the schema descriptor for created_at field.
+	federationusagecursorDescCreatedAt := federationusagecursorMixinFields0[0].Descriptor()
+	// federationusagecursor.DefaultCreatedAt holds the default value on creation for the created_at field.
+	federationusagecursor.DefaultCreatedAt = federationusagecursorDescCreatedAt.Default.(func() time.Time)
+	// federationusagecursorDescUpdatedAt is the schema descriptor for updated_at field.
+	federationusagecursorDescUpdatedAt := federationusagecursorMixinFields0[1].Descriptor()
+	// federationusagecursor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	federationusagecursor.DefaultUpdatedAt = federationusagecursorDescUpdatedAt.Default.(func() time.Time)
+	// federationusagecursor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	federationusagecursor.UpdateDefaultUpdatedAt = federationusagecursorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// federationusagecursorDescScope is the schema descriptor for scope field.
+	federationusagecursorDescScope := federationusagecursorFields[0].Descriptor()
+	// federationusagecursor.ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
+	federationusagecursor.ScopeValidator = func() func(string) error {
+		validators := federationusagecursorDescScope.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(scope string) error {
+			for _, fn := range fns {
+				if err := fn(scope); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// federationusagecursorDescLastDeliveredID is the schema descriptor for last_delivered_id field.
+	federationusagecursorDescLastDeliveredID := federationusagecursorFields[1].Descriptor()
+	// federationusagecursor.DefaultLastDeliveredID holds the default value on creation for the last_delivered_id field.
+	federationusagecursor.DefaultLastDeliveredID = federationusagecursorDescLastDeliveredID.Default.(int64)
+	// federationusagecursorDescAttempts is the schema descriptor for attempts field.
+	federationusagecursorDescAttempts := federationusagecursorFields[2].Descriptor()
+	// federationusagecursor.DefaultAttempts holds the default value on creation for the attempts field.
+	federationusagecursor.DefaultAttempts = federationusagecursorDescAttempts.Default.(int)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks1 := groupMixin[1].Hooks()
 	group.Hooks[0] = groupMixinHooks1[0]
@@ -2188,7 +2310,9 @@ func init() {
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
 	userMixinHooks1 := userMixin[1].Hooks()
+	userMixinHooks2 := userMixin[2].Hooks()
 	user.Hooks[0] = userMixinHooks1[0]
+	user.Hooks[1] = userMixinHooks2[0]
 	userMixinInters1 := userMixin[1].Interceptors()
 	user.Interceptors[0] = userMixinInters1[0]
 	userMixinFields0 := userMixin[0].Fields()
@@ -2309,6 +2433,10 @@ func init() {
 	userDescRpmLimit := userFields[21].Descriptor()
 	// user.DefaultRpmLimit holds the default value on creation for the rpm_limit field.
 	user.DefaultRpmLimit = userDescRpmLimit.Default.(int)
+	// userDescFederationUsageWatermarkSeq is the schema descriptor for federation_usage_watermark_seq field.
+	userDescFederationUsageWatermarkSeq := userFields[22].Descriptor()
+	// user.DefaultFederationUsageWatermarkSeq holds the default value on creation for the federation_usage_watermark_seq field.
+	user.DefaultFederationUsageWatermarkSeq = userDescFederationUsageWatermarkSeq.Default.(int64)
 	userallowedgroupFields := schema.UserAllowedGroup{}.Fields()
 	_ = userallowedgroupFields
 	// userallowedgroupDescCreatedAt is the schema descriptor for created_at field.

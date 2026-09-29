@@ -212,6 +212,34 @@ func TestAdminServiceBulkUpdateAccounts_OmittedOutboundIdentityIsPreserved(t *te
 	require.NotContains(t, repo.lastBulkUpdate.Credentials, outboundIdentityCredential)
 }
 
+func TestAdminServiceBulkUpdateAccounts_NormalizesClaudeCodeDeviceAndClearing(t *testing.T) {
+	const device = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	for _, tc := range []struct {
+		name string
+		raw  any
+		want any
+	}{
+		{"device", " ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef0123456789 ", device},
+		{"null", nil, nil},
+		{"blank", "  ", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &accountRepoStubForBulkUpdate{getByIDsAccounts: []*Account{{ID: 1, Platform: PlatformAnthropic, Type: AccountTypeOAuth}}}
+			svc := &adminServiceImpl{accountRepo: repo}
+			_, err := svc.BulkUpdateAccounts(context.Background(), &BulkUpdateAccountsInput{AccountIDs: []int64{1}, Credentials: map[string]any{claudeCodeDeviceCredential: tc.raw}})
+			require.NoError(t, err)
+			require.Contains(t, repo.lastBulkUpdate.Credentials, claudeCodeDeviceCredential, "JSONB merge needs an explicit null to clear the override")
+			require.Equal(t, tc.want, repo.lastBulkUpdate.Credentials[claudeCodeDeviceCredential])
+		})
+	}
+
+	repo := &accountRepoStubForBulkUpdate{getByIDsAccounts: []*Account{{ID: 1, Platform: PlatformAnthropic, Type: AccountTypeOAuth}}}
+	svc := &adminServiceImpl{accountRepo: repo}
+	_, err := svc.BulkUpdateAccounts(context.Background(), &BulkUpdateAccountsInput{AccountIDs: []int64{1}, Credentials: map[string]any{claudeCodeDeviceCredential: "clientid123"}})
+	requireApplicationErrorReason(t, err, "CLAUDE_DEVICE_ID_INVALID")
+	require.Zero(t, repo.bulkUpdateCalls, "reject the device before the first write")
+}
+
 // TestAdminService_BulkUpdateAccounts_AllSuccessIDs 验证批量更新成功时返回 success_ids/failed_ids。
 func TestAdminService_BulkUpdateAccounts_AllSuccessIDs(t *testing.T) {
 	repo := &accountRepoStubForBulkUpdate{}

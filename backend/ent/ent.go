@@ -28,6 +28,8 @@ import (
 	"github.com/LuckyKuang/sub2api-plus/ent/channelmonitorrequesttemplate"
 	"github.com/LuckyKuang/sub2api-plus/ent/compositemodelroute"
 	"github.com/LuckyKuang/sub2api-plus/ent/errorpassthroughrule"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationoutbox"
+	"github.com/LuckyKuang/sub2api-plus/ent/federationusagecursor"
 	"github.com/LuckyKuang/sub2api-plus/ent/group"
 	"github.com/LuckyKuang/sub2api-plus/ent/idempotencyrecord"
 	"github.com/LuckyKuang/sub2api-plus/ent/identityadoptiondecision"
@@ -127,6 +129,8 @@ func checkColumn(t, c string) error {
 			channelmonitorrequesttemplate.Table: channelmonitorrequesttemplate.ValidColumn,
 			compositemodelroute.Table:           compositemodelroute.ValidColumn,
 			errorpassthroughrule.Table:          errorpassthroughrule.ValidColumn,
+			federationoutbox.Table:              federationoutbox.ValidColumn,
+			federationusagecursor.Table:         federationusagecursor.ValidColumn,
 			group.Table:                         group.ValidColumn,
 			idempotencyrecord.Table:             idempotencyrecord.ValidColumn,
 			identityadoptiondecision.Table:      identityadoptiondecision.ValidColumn,

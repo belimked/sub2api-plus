@@ -327,7 +327,7 @@ func (s *GatewayService) buildOAuthMetadataUserID(parsed *ParsedRequest, account
 		return ""
 	}
 
-	userID := strings.TrimSpace(account.GetClaudeUserID())
+	userID := account.ClaudeCodeDeviceOverride()
 	if userID == "" && fp != nil {
 		userID = fp.ClientID
 	}
@@ -396,7 +396,7 @@ func (s *GatewayService) applyClaudeCodeOAuthMimicryToBody(
 	normalizeOpts := claudeOAuthNormalizeOptions{}
 
 	if s.identityService != nil && c != nil && c.Request != nil {
-		if fp, err := s.identityService.GetOrCreateFingerprint(ctx, account.ID, c.Request.Header); err == nil && fp != nil {
+		if fp, err := s.identityService.GetOrCreateFingerprint(ctx, account, c.Request.Header); err == nil && fp != nil {
 			mimicMPT := false
 			if s.settingService != nil {
 				_, mimicMPT, _ = s.settingService.GetGatewayForwardingSettings(ctx)
@@ -452,7 +452,7 @@ func (s *GatewayService) buildOAuthMetadataUserIDFromBody(
 		return ""
 	}
 
-	userID := strings.TrimSpace(account.GetClaudeUserID())
+	userID := account.ClaudeCodeDeviceOverride()
 	if userID == "" && fp != nil {
 		userID = fp.ClientID
 	}

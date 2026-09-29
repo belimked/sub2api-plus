@@ -297,6 +297,7 @@ FROM cleared`, userID)
 		if affected == 0 {
 			return service.ErrUserNotFound
 		}
+		emitFederationBalanceOutboxByID(txCtx, txClient, userID)
 
 		newBalance, err = queryUserBalance(txCtx, txClient, userID)
 		if err != nil {

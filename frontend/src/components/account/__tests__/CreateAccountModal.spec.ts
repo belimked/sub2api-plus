@@ -19,6 +19,7 @@ const {
 }))
 
 vi.mock('@/components/account/OutboundIdentityEditor.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/components/account/ClaudeDeviceIdField.vue', () => ({ default: { template: '<div />' } }))
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({

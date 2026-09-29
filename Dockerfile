@@ -98,6 +98,16 @@ RUN --mount=type=cache,id=sub2api-gomod,target=/go/pkg/mod \
     -o /app/sub2api \
     ./cmd/server
 
+# Federation sidecars (see backend/cmd/federation-pusher and
+# backend/cmd/federation-usage-tailer): shipped in the same image so a
+# compose service can run them with `command: ["/app/federation-pusher"]`.
+RUN --mount=type=cache,id=sub2api-gomod,target=/go/pkg/mod \
+    --mount=type=cache,id=sub2api-gobuild,target=/root/.cache/go-build \
+    for cmd in federation-pusher federation-usage-tailer; do \
+        CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build \
+        -ldflags="-s -w" -trimpath -o /app/$cmd ./cmd/$cmd || exit 1; \
+    done
+
 # -----------------------------------------------------------------------------
 # Stage 3: PostgreSQL Client (version-matched with docker-compose)
 # -----------------------------------------------------------------------------
@@ -145,6 +155,7 @@ WORKDIR /app
 
 # Copy binary/resources with ownership to avoid extra full-layer chown copy
 COPY --from=backend-builder --chown=sub2api:sub2api /app/sub2api /app/sub2api
+COPY --from=backend-builder --chown=sub2api:sub2api /app/federation-pusher /app/federation-usage-tailer /app/
 COPY --from=backend-builder --chown=sub2api:sub2api /app/backend/resources /app/resources
 
 # Create data directory

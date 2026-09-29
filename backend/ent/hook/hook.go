@@ -201,6 +201,30 @@ func (f ErrorPassthroughRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ErrorPassthroughRuleMutation", m)
 }
 
+// The FederationOutboxFunc type is an adapter to allow the use of ordinary
+// function as FederationOutbox mutator.
+type FederationOutboxFunc func(context.Context, *ent.FederationOutboxMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FederationOutboxFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FederationOutboxMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FederationOutboxMutation", m)
+}
+
+// The FederationUsageCursorFunc type is an adapter to allow the use of ordinary
+// function as FederationUsageCursor mutator.
+type FederationUsageCursorFunc func(context.Context, *ent.FederationUsageCursorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FederationUsageCursorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FederationUsageCursorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FederationUsageCursorMutation", m)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)

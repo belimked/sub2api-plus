@@ -841,6 +841,7 @@ func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount flo
 	if n == 0 {
 		return service.ErrUserNotFound
 	}
+	emitFederationBalanceOutboxByID(ctx, client, id)
 	return nil
 }
 
@@ -862,6 +863,7 @@ func (r *userRepository) ApplyRedeemBalanceAdjustment(ctx context.Context, id in
 	if affected == 0 {
 		return service.ErrUserNotFound
 	}
+	emitFederationBalanceOutboxByID(ctx, client, id)
 	return nil
 }
 
@@ -878,6 +880,7 @@ func (r *userRepository) DeductBalance(ctx context.Context, id int64, amount flo
 		return err
 	}
 	if n > 0 {
+		emitFederationBalanceOutboxByID(ctx, client, id)
 		return nil
 	}
 
@@ -891,6 +894,7 @@ func (r *userRepository) DeductBalance(ctx context.Context, id int64, amount flo
 	if n == 0 {
 		return service.ErrUserNotFound
 	}
+	emitFederationBalanceOutboxByID(ctx, client, id)
 	return nil
 }
 
@@ -912,11 +916,12 @@ func (r *userRepository) DeductAvailableBalance(ctx context.Context, id int64, a
 			SET balance = target.balance - LEAST($1, GREATEST(target.balance, 0)), updated_at = NOW()
 			FROM target
 			WHERE u.id = target.id AND u.deleted_at IS NULL
-			RETURNING target.balance - u.balance AS deducted
+			RETURNING target.balance - u.balance AS deducted, u.balance, u.email, u.role, u.federation_usage_watermark_seq
 		)
-		SELECT deducted FROM updated
+		SELECT deducted, balance, email, role, federation_usage_watermark_seq FROM updated
 	`
-	rows, err := clientFromContext(ctx, r.client).QueryContext(ctx, updateSQL, amount, id)
+	client := clientFromContext(ctx, r.client)
+	rows, err := client.QueryContext(ctx, updateSQL, amount, id)
 	if err != nil {
 		return 0, err
 	}
@@ -931,10 +936,22 @@ func (r *userRepository) DeductAvailableBalance(ctx context.Context, id int64, a
 		}
 		return 0, service.ErrUserNotFound
 	}
-	if err := rows.Scan(&deducted); err != nil {
+	var (
+		newBalance   float64
+		email        string
+		role         string
+		watermarkSeq int64
+	)
+	if err := rows.Scan(&deducted, &newBalance, &email, &role, &watermarkSeq); err != nil {
 		return 0, err
 	}
-	return deducted, rows.Err()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if deducted > 0 {
+		emitFederationBalanceOutbox(ctx, client, id, email, role, newBalance, watermarkSeq)
+	}
+	return deducted, nil
 }
 
 // AdjustBalance 原子地把 delta 累加到余额上，结果为负时整条语句不生效。
@@ -945,13 +962,15 @@ func (r *userRepository) AdjustBalance(ctx context.Context, id int64, delta floa
 		UPDATE users
 		SET balance = balance + $1, updated_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL AND balance + $1 >= 0
-		RETURNING balance - $1, balance
+		RETURNING balance - $1, balance, email, role, federation_usage_watermark_seq
 	`
-	change, ok, err := scanBalanceChange(ctx, clientFromContext(ctx, r.client), updateSQL, delta, id)
+	client := clientFromContext(ctx, r.client)
+	change, email, role, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, delta, id)
 	if err != nil {
 		return service.BalanceChange{}, err
 	}
 	if ok {
+		emitFederationBalanceOutbox(ctx, client, id, email, role, change.New, watermarkSeq)
 		return change, nil
 	}
 
@@ -978,15 +997,17 @@ func (r *userRepository) SetBalance(ctx context.Context, id int64, value float64
 		SET balance = $1, updated_at = NOW()
 		FROM (SELECT id, balance FROM users WHERE id = $2 AND deleted_at IS NULL) AS prev
 		WHERE u.id = prev.id AND u.deleted_at IS NULL
-		RETURNING prev.balance, u.balance
+		RETURNING prev.balance, u.balance, u.email, u.role, u.federation_usage_watermark_seq
 	`
-	change, ok, err := scanBalanceChange(ctx, clientFromContext(ctx, r.client), updateSQL, value, id)
+	client := clientFromContext(ctx, r.client)
+	change, email, role, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, value, id)
 	if err != nil {
 		return service.BalanceChange{}, err
 	}
 	if !ok {
 		return service.BalanceChange{}, service.ErrUserNotFound
 	}
+	emitFederationBalanceOutbox(ctx, client, id, email, role, change.New, watermarkSeq)
 	return change, nil
 }
 
@@ -1012,29 +1033,6 @@ func (r *userRepository) currentBalance(ctx context.Context, id int64) (balance 
 		return 0, err
 	}
 	return balance, rows.Err()
-}
-
-// scanBalanceChange 执行一条 RETURNING 旧余额、新余额的语句。ok 为 false 表示语句未命中任何行。
-func scanBalanceChange(ctx context.Context, client *dbent.Client, query string, args ...any) (change service.BalanceChange, ok bool, err error) {
-	rows, err := client.QueryContext(ctx, query, args...)
-	if err != nil {
-		return service.BalanceChange{}, false, err
-	}
-	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-	if !rows.Next() {
-		if rowsErr := rows.Err(); rowsErr != nil {
-			return service.BalanceChange{}, false, rowsErr
-		}
-		return service.BalanceChange{}, false, nil
-	}
-	if err := rows.Scan(&change.Old, &change.New); err != nil {
-		return service.BalanceChange{}, false, err
-	}
-	return change, true, rows.Err()
 }
 
 func (r *userRepository) UpdateConcurrency(ctx context.Context, id int64, amount int) error {

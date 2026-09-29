@@ -55,6 +55,9 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 	if err := r.applyUsageBillingEffects(ctx, tx, cmd, result); err != nil {
 		return nil, err
 	}
+	if result.NewBalance != nil {
+		emitFederationBalanceOutboxTx(ctx, tx, cmd.UserID)
+	}
 	if cmd.UsageLog != nil {
 		// Keep the displayed charge on the same NUMERIC(20,8) boundary as the
 		// balance/quota mutations committed by this transaction.
@@ -186,6 +189,9 @@ func (r *usageBillingRepository) applyBatchImageBalanceHold(
 		result = &service.BatchImageBalanceHoldResult{}
 	}
 	result.Applied = true
+	if result.NewBalance != nil {
+		emitFederationBalanceOutboxTx(ctx, tx, cmd.UserID)
+	}
 	if cmd.UsageLog != nil {
 		usageRepo := newUsageLogRepositoryWithSQL(nil, tx)
 		if _, err := usageRepo.createSingle(ctx, tx, cmd.UsageLog); err != nil {

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/LuckyKuang/sub2api-plus/internal/pkg/logger"
 	"github.com/LuckyKuang/sub2api-plus/internal/pkg/outboundidentity"
@@ -13,6 +14,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,20 +44,33 @@ type IdentityCache interface {
 	SetMaskedSessionID(ctx context.Context, accountID int64, sessionID string) error
 }
 
+// ClaudeCodeDeviceStore persists one private Claude Code device ID per
+// Anthropic OAuth or setup-token account. The candidate is stored only when the
+// account has none; the stored device ID is returned in both cases.
+type ClaudeCodeDeviceStore interface {
+	GetOrCreateClaudeCodeDeviceID(ctx context.Context, accountID int64, candidate string) (string, error)
+}
+
 // IdentityService 管理OAuth账号的请求身份指纹
 type IdentityService struct {
-	cache IdentityCache
+	cache   IdentityCache
+	devices ClaudeCodeDeviceStore
+	// deviceIDs memoizes persisted device IDs, which never change once stored.
+	deviceIDs sync.Map
 }
 
 // NewIdentityService 创建新的IdentityService
-func NewIdentityService(cache IdentityCache) *IdentityService {
-	return &IdentityService{cache: cache}
+func NewIdentityService(cache IdentityCache, devices ClaudeCodeDeviceStore) *IdentityService {
+	return &IdentityService{cache: cache, devices: devices}
 }
 
 // GetOrCreateFingerprint retains the account device ID while replacing cached
 // client declarations with the trusted outbound identity. Caller headers are
 // intentionally ignored, including on cache creation and version changes.
-func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID int64, _ http.Header) (*Fingerprint, error) {
+func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, account *Account, _ http.Header) (*Fingerprint, error) {
+	if account == nil {
+		return nil, errors.New("fingerprint requires an account")
+	}
 	identity, ok := outboundidentity.Default(ctx, "claude")
 	if !ok {
 		identity = builtInOutboundIdentity("claude")
@@ -71,22 +86,63 @@ func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID 
 		StainlessRuntime:        headers.Get("X-Stainless-Runtime"),
 		StainlessRuntimeVersion: headers.Get("X-Stainless-Runtime-Version"),
 	}
-	cached, err := s.cache.GetFingerprint(ctx, accountID)
-	if err == nil && cached != nil {
+	cached, err := s.cache.GetFingerprint(ctx, account.ID)
+	if err != nil {
+		cached = nil
+	}
+	if cached != nil {
 		fp.ClientID = cached.ClientID
 		fp.UpdatedAt = cached.UpdatedAt
-		if *fp == *cached && time.Since(time.Unix(fp.UpdatedAt, 0)) <= 24*time.Hour {
-			return fp, nil
+	}
+	fp.ClientID = s.accountDeviceID(ctx, account, fp.ClientID)
+	if cached == nil || *fp != *cached || time.Since(time.Unix(fp.UpdatedAt, 0)) > 24*time.Hour {
+		fp.UpdatedAt = time.Now().Unix()
+		if err := s.cache.SetFingerprint(ctx, account.ID, fp); err != nil {
+			logger.LegacyPrintf("service.identity", "Failed to persist account device identity: account_id=%d", account.ID)
 		}
 	}
-	if fp.ClientID == "" {
-		fp.ClientID = generateClientID()
-	}
-	fp.UpdatedAt = time.Now().Unix()
-	if err := s.cache.SetFingerprint(ctx, accountID, fp); err != nil {
-		logger.LegacyPrintf("service.identity", "Failed to persist account device identity: account_id=%d", accountID)
+	// A configured device applies to outbound requests only. The cache and store
+	// keep the persisted device, so clearing the override restores it.
+	if override := account.ClaudeCodeDeviceOverride(); override != "" {
+		fp.ClientID = override
 	}
 	return fp, nil
+}
+
+// accountDeviceID returns the account's Claude Code device ID. Anthropic OAuth
+// and setup-token accounts persist it so cache eviction and restarts keep the
+// same device; the first stored value adopts a valid cached ID so an upgrade
+// does not rotate active accounts. Other accounts keep the cache-only ID.
+func (s *IdentityService) accountDeviceID(ctx context.Context, account *Account, cachedID string) string {
+	if s.devices == nil || !account.IsAnthropicOAuthOrSetupToken() {
+		if cachedID != "" {
+			return cachedID
+		}
+		return generateClientID()
+	}
+	if memo, ok := s.deviceIDs.Load(account.ID); ok {
+		if stored, ok := memo.(string); ok {
+			return stored
+		}
+	}
+	candidate := cachedID
+	if !isClaudeCodeDeviceID(candidate) {
+		candidate = generateClientID()
+	}
+	stored, err := s.devices.GetOrCreateClaudeCodeDeviceID(ctx, account.ID, candidate)
+	if err == nil && !isClaudeCodeDeviceID(stored) {
+		err = errors.New("stored device ID is malformed")
+	}
+	if err != nil {
+		// Serve the cached device for now; the next request retries persistence.
+		logger.LegacyPrintf("service.identity", "Failed to resolve persistent Claude Code device identity: account_id=%d err=%v", account.ID, err)
+		if cachedID != "" {
+			return cachedID
+		}
+		return candidate
+	}
+	s.deviceIDs.Store(account.ID, stored)
+	return stored
 }
 
 // ApplyFingerprint 将指纹应用到请求头（覆盖原有的x-stainless-*头）
@@ -284,6 +340,20 @@ func generateClientID() string {
 		return hex.EncodeToString(h[:])
 	}
 	return hex.EncodeToString(b)
+}
+
+// isClaudeCodeDeviceID reports whether id has the generated device ID format:
+// 64 lowercase hexadecimal characters.
+func isClaudeCodeDeviceID(id string) bool {
+	if len(id) != 64 {
+		return false
+	}
+	for i := 0; i < len(id); i++ {
+		if c := id[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 // generateUUIDFromSeed 从种子生成确定性UUID v4格式字符串

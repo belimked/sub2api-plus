@@ -1013,22 +1013,6 @@ func (a *Account) GetExtraString(key string) string {
 	return ""
 }
 
-func (a *Account) GetClaudeUserID() string {
-	if v := strings.TrimSpace(a.GetExtraString("claude_user_id")); v != "" {
-		return v
-	}
-	if v := strings.TrimSpace(a.GetExtraString("anthropic_user_id")); v != "" {
-		return v
-	}
-	if v := strings.TrimSpace(a.GetCredential("claude_user_id")); v != "" {
-		return v
-	}
-	if v := strings.TrimSpace(a.GetCredential("anthropic_user_id")); v != "" {
-		return v
-	}
-	return ""
-}
-
 // matchAntigravityWildcard 通配符匹配（仅支持末尾 *）
 // 用于 model_mapping 的通配符匹配
 func matchAntigravityWildcard(pattern, str string) bool {

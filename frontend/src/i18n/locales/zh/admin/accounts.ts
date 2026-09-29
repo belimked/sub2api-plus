@@ -627,6 +627,13 @@ export default {
       apiKeyRequired: 'API Key *',
       apiKeyPlaceholder: 'sk-ant-api03-...',
       apiKeyHint: '您的 Claude Console API Key',
+      claudeDeviceId: {
+        label: 'Device ID',
+        placeholder: '留空则使用系统自动生成并固定的值',
+        hint: '64 位十六进制字符，保存时统一转为小写。留空时使用系统为该账号自动生成并固定的 device_id。修改后上游会视为换了一台设备；不要给多个账号填同一个值。',
+        invalid: '必须是 64 位十六进制字符',
+        singleAccountOnly: '填写了 Device ID 时一次只能添加一个账号，多个账号不能共用同一个 device_id'
+      },
       upstreamRequestIdHeader: '上游ID',
       upstreamRequestIdHeaderPlaceholder: '留空不记录',
       upstreamRequestIdHeaderHelp: {
