@@ -162,3 +162,10 @@ deployed under other names (`269_claude_code_account_identities.sql`,
 databases that applied the old names only re-run them as no-ops. When a future
 upstream merge adds migrations at or above `271`, renumber the fork migrations
 above the new maximum the same way.
+
+`v0.2.8+custom.001` dropped upstream `239_channel_reasoning_effort_multipliers.sql`
+but kept the code that reads `reasoning_effort_multipliers`, which broke the
+model plaza and channel pricing. `276_channel_reasoning_effort_multipliers.sql`
+restores the columns with the same idempotent SQL that upstream re-added as
+`271_channel_reasoning_effort_multipliers.sql` in `v0.2.9+custom.001`; when that
+file arrives in a merge it re-runs as a no-op next to `276`.
