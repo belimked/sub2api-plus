@@ -107,12 +107,12 @@ func (c *greenClient) check(ctx context.Context, content string) (*greenData, er
 	}
 	form.Set("Signature", rpcSignature(http.MethodPost, form, c.accessKeySecret))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/", strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/", strings.NewReader(form.Encode())) //nolint:gosec // G704: endpoint 只来自运维配置的 ALIYUN_GREEN_ENDPOINT/REGION，请求内容不参与 URL 构造
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := c.http.Do(req)
+	resp, err := c.http.Do(req) //nolint:gosec // G704: 同上
 	if err != nil {
 		return nil, err
 	}
