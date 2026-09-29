@@ -148,9 +148,12 @@ Fork-only changes to preserve on every merge:
 - Claude Code account identity and device ID persistence.
 - The user API-key dialog selects a group directly, without the upstream
   provider step (`KeysView.vue`).
+- `cmd/aliyun-moderation`: an OpenAI-compatible `/v1/moderations` adapter for
+  Aliyun AI Guardrails, used as the Content Moderation base URL (see its
+  README). It does not touch the audit boundary or extraction.
 - `.github/workflows/belimked-image.yml` publishes
   `ghcr.io/belimked/sub2api-plus:main` and `:sha-<commit>`; the `Dockerfile`
-  also builds both federation sidecar binaries.
+  also builds the federation and `aliyun-moderation` sidecar binaries.
 
 Fork migrations continue after the highest upstream prefix. They were first
 deployed under other names (`269_claude_code_account_identities.sql`,
