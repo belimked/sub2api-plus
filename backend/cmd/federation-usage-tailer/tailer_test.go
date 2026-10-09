@@ -16,6 +16,7 @@ import (
 
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
 	"github.com/LuckyKuang/sub2api-plus/ent/enttest"
+	"github.com/LuckyKuang/sub2api-plus/internal/domain"
 	"github.com/LuckyKuang/sub2api-plus/internal/federation"
 	"github.com/stretchr/testify/require"
 
@@ -392,6 +393,51 @@ func TestTailer_SkipsLocalOnlyUserWithoutBlocking(t *testing.T) {
 	require.NoError(t, tl.runOnce(ctx))
 
 	require.Equal(t, []float64{1, 2}, billed, "only the federated user's usage is billed to mainland")
+	cursor, err := tl.loadOrCreateCursor(ctx)
+	require.NoError(t, err)
+	require.Equal(t, last.ID, cursor.LastDeliveredID)
+	require.Nil(t, cursor.LastError)
+}
+
+func TestTailer_SkipsAdminOnEitherSideWithoutBlocking(t *testing.T) {
+	ctx := context.Background()
+	client := newTailerTestClient(t)
+	fed := insertLocalUser(t, ctx, client, "tailer-fed@example.com")
+	localAdmin := insertLocalUser(t, ctx, client, "tailer-local-admin@example.com")
+	_, err := client.User.UpdateOneID(localAdmin.ID).SetRole(domain.RoleAdmin).Save(ctx)
+	require.NoError(t, err)
+	mainlandAdmin := insertLocalUser(t, ctx, client, "tailer-mainland-admin@example.com")
+	accountID, apiKeyID := insertUsageFixtures(t, ctx, client, fed.ID)
+	insertUsageLog(t, ctx, client, localAdmin.ID, accountID, apiKeyID, 3)
+	insertUsageLog(t, ctx, client, mainlandAdmin.ID, accountID, apiKeyID, 4)
+	last := insertUsageLog(t, ctx, client, fed.ID, accountID, apiKeyID, 2)
+
+	var billedPaths []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		jsonOK(w, map[string]string{"access_token": "test-token"})
+	})
+	mux.HandleFunc("/api/v1/admin/users", func(w http.ResponseWriter, r *http.Request) {
+		jsonOK(w, map[string]any{"items": []federation.RemoteUser{
+			{ID: 42, Email: "tailer-fed@example.com", Status: "active", Role: "user"},
+			{ID: 43, Email: "tailer-local-admin@example.com", Status: "active", Role: "user"},
+			{ID: 44, Email: "tailer-mainland-admin@example.com", Status: "active", Role: "admin"},
+		}})
+	})
+	mux.HandleFunc("/api/v1/admin/users/", func(w http.ResponseWriter, r *http.Request) {
+		billedPaths = append(billedPaths, r.URL.Path)
+		jsonOK(w, map[string]any{"message": "ok"})
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	tl := newTestTailer(t, client, server.URL)
+	require.NoError(t, tl.runOnce(ctx))
+
+	require.Equal(t, []string{
+		"/api/v1/admin/users/42/balance",
+		"/api/v1/admin/users/42/federation-usage-watermark",
+	}, billedPaths, "admin usage on either side must never be billed to or watermarked on mainland")
 	cursor, err := tl.loadOrCreateCursor(ctx)
 	require.NoError(t, err)
 	require.Equal(t, last.ID, cursor.LastDeliveredID)

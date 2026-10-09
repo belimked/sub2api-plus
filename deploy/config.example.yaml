@@ -1289,7 +1289,8 @@ federation:
   # 环境变量：FEDERATION_OUTBOX_ENABLED
   outbox_enabled: false
   # 只在海外站开启：准入时用 余额 - 水位之后本地尚未同步回大陆的用量 判断可用余额；
-  # 计算出错时回退到普通余额判断。环境变量：FEDERATION_ADMISSION_CHECK_ENABLED
+  # 计算出错时回退到普通余额判断；管理员和水位为 0 的（未联邦）用户始终用普通余额判断。
+  # 环境变量：FEDERATION_ADMISSION_CHECK_ENABLED
   admission_check_enabled: false
   # 只在海外站开启：允许大陆 federation-pusher 通过
   # POST /api/v1/admin/users/:id/federation-password-hash 写入 bcrypt 密码哈希，

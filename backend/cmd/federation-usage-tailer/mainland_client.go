@@ -19,40 +19,40 @@ type mainlandClient struct {
 	api *federation.AdminAPIClient
 
 	mu    sync.Mutex
-	cache map[string]int64 // email -> mainland user id
+	cache map[string]federation.RemoteUser // email -> mainland user
 }
 
 func newMainlandClient(cfg tailerConfig) *mainlandClient {
 	return &mainlandClient{
 		api:   federation.NewAdminAPIClient(cfg.MainlandBaseURL, cfg.AdminEmail, cfg.AdminPassword, cfg.HTTPTimeout),
-		cache: make(map[string]int64),
+		cache: make(map[string]federation.RemoteUser),
 	}
 }
 
-// resolveUserID maps a local email to the mainland user id. found is false
+// resolveUser maps a local email to the mainland user. found is false
 // only when mainland definitively has no such user; lookup failures are
 // returned as errors. Misses are not cached, so a user created on mainland
 // later is picked up without restarting the tailer.
-func (c *mainlandClient) resolveUserID(ctx context.Context, email string) (id int64, found bool, err error) {
+func (c *mainlandClient) resolveUser(ctx context.Context, email string) (user federation.RemoteUser, found bool, err error) {
 	c.mu.Lock()
-	if id, ok := c.cache[email]; ok {
+	if u, ok := c.cache[email]; ok {
 		c.mu.Unlock()
-		return id, true, nil
+		return u, true, nil
 	}
 	c.mu.Unlock()
 
 	u, err := c.api.FindUserByEmail(ctx, email)
 	if err != nil {
-		return 0, false, err
+		return federation.RemoteUser{}, false, err
 	}
 	if u == nil {
-		return 0, false, nil
+		return federation.RemoteUser{}, false, nil
 	}
 
 	c.mu.Lock()
-	c.cache[email] = u.ID
+	c.cache[email] = *u
 	c.mu.Unlock()
-	return u.ID, true, nil
+	return *u, true, nil
 }
 
 func (c *mainlandClient) subtractBalance(ctx context.Context, idempotencyKey string, mainlandUserID int64, cost float64, notes string) error {

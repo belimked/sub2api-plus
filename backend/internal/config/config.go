@@ -130,6 +130,8 @@ type FederationConfig struct {
 	// AdmissionCheckEnabled: when true, the API key auth middleware computes
 	// available balance as balance - Σ(local usage_log.actual_cost since
 	// federation_usage_watermark_seq) instead of using balance directly.
+	// Admins and users whose watermark is still 0 (never federated) keep the
+	// plain balance check: their local balance already includes local usage.
 	AdmissionCheckEnabled bool `mapstructure:"admission_check_enabled"`
 	// AcceptPasswordHash: when true, the admin endpoint
 	// POST /api/v1/admin/users/:id/federation-password-hash accepts a bcrypt

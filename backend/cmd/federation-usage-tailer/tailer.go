@@ -9,6 +9,7 @@ import (
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
 	"github.com/LuckyKuang/sub2api-plus/ent/federationusagecursor"
 	"github.com/LuckyKuang/sub2api-plus/ent/usagelog"
+	"github.com/LuckyKuang/sub2api-plus/internal/domain"
 	"github.com/LuckyKuang/sub2api-plus/internal/federation"
 )
 
@@ -56,7 +57,9 @@ func (t *tailer) runOnce(ctx context.Context) error {
 // money, unlike skipping a row that failed to bill a real cost. A user
 // mainland definitively doesn't know is a local-only user of this
 // deployment: its usage was already billed to the local balance, so the row
-// is skipped too. Lookup failures still block the cursor.
+// is skipped too. Admin accounts are never federated (the mainland outbox
+// and pusher exclude them), so an admin on either side is handled like a
+// local-only user. Lookup failures still block the cursor.
 func (t *tailer) deliverOne(ctx context.Context, row *dbent.UsageLog) error {
 	if row.ActualCost <= 0 {
 		return nil
@@ -68,8 +71,13 @@ func (t *tailer) deliverOne(ctx context.Context, row *dbent.UsageLog) error {
 		}
 		return federation.RetryableErr(fmt.Errorf("load local user %d: %w", row.UserID, err))
 	}
+	if localUser.Role == domain.RoleAdmin {
+		t.logger.Info("federation-usage-tailer: skipping admin user (never federated)",
+			"usage_log_id", row.ID, "user_id", row.UserID)
+		return nil
+	}
 
-	mainlandID, found, err := t.mainland.resolveUserID(ctx, localUser.Email)
+	mainlandUser, found, err := t.mainland.resolveUser(ctx, localUser.Email)
 	if err != nil {
 		return err
 	}
@@ -78,6 +86,12 @@ func (t *tailer) deliverOne(ctx context.Context, row *dbent.UsageLog) error {
 			"usage_log_id", row.ID, "user_id", row.UserID)
 		return nil
 	}
+	if mainlandUser.Role == domain.RoleAdmin {
+		t.logger.Info("federation-usage-tailer: skipping user whose mainland account is an admin (never federated)",
+			"usage_log_id", row.ID, "user_id", row.UserID, "mainland_user_id", mainlandUser.ID)
+		return nil
+	}
+	mainlandID := mainlandUser.ID
 
 	idempotencyKey := fmt.Sprintf("federation-usage-%d", row.ID)
 	notes := fmt.Sprintf("federation usage_log id=%d", row.ID)
