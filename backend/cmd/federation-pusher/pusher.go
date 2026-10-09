@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
 	"github.com/LuckyKuang/sub2api-plus/ent/federationoutbox"
+	"github.com/LuckyKuang/sub2api-plus/internal/domain"
 	"github.com/LuckyKuang/sub2api-plus/internal/federation"
 
 	"entgo.io/ent/dialect"
@@ -158,6 +160,12 @@ func (p *pusher) deliver(ctx context.Context, row *dbent.FederationOutbox) {
 			return
 		}
 		err = p.overseas.applyBalanceSnapshot(ctx, idempotencyKey, payload.Email, payload.Balance, payload.AsOfUsageSeq)
+		if errors.Is(err, errOverseasUserMissing) && p.isLocalAdmin(ctx, payload.ID) {
+			// No user.upsert ever creates an admin mirror, so waiting is pointless.
+			p.logger.Info("federation-pusher: skipping admin balance.snapshot, no overseas account with this email",
+				"id", row.ID, "user_id", payload.ID)
+			err = nil
+		}
 	default:
 		p.markFailed(ctx, row, fmt.Sprintf("unknown event_type %q", row.EventType))
 		return
@@ -171,6 +179,11 @@ func (p *pusher) deliver(ctx context.Context, row *dbent.FederationOutbox) {
 	default:
 		p.markFailed(ctx, row, err.Error())
 	}
+}
+
+func (p *pusher) isLocalAdmin(ctx context.Context, userID int64) bool {
+	u, err := p.db.User.Get(ctx, userID)
+	return err == nil && u.Role == domain.RoleAdmin
 }
 
 func (p *pusher) markDelivered(ctx context.Context, row *dbent.FederationOutbox) {

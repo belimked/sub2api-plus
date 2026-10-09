@@ -300,9 +300,9 @@ func TestFederationOutbox_UserUpsertCarriesPasswordHash(t *testing.T) {
 	require.Equal(t, []string{"$2a$10$first", "$2a$10$second"}, hashes)
 }
 
-// Admin accounts are never federated: both deployments may share an admin
-// email, and syncing would overwrite the other side's admin.
-func TestFederationOutbox_AdminUsersEmitNothing(t *testing.T) {
+// Admin identity is never federated (both deployments may share an admin
+// email), but admin balances are.
+func TestFederationOutbox_AdminUsersEmitBalanceOnly(t *testing.T) {
 	ctx := context.Background()
 	client := newFederationOutboxTestClient(t)
 
@@ -315,7 +315,12 @@ func TestFederationOutbox_AdminUsersEmitNothing(t *testing.T) {
 	_, err = client.User.UpdateOneID(u.ID).SetPasswordHash("$2a$10$admin2").SetBalance(5).Save(ctx)
 	require.NoError(t, err)
 
-	count, err := client.FederationOutbox.Query().Count(ctx)
+	events, err := client.FederationOutbox.Query().All(ctx)
 	require.NoError(t, err)
-	require.Zero(t, count)
+	types := make([]string, 0, len(events))
+	for _, e := range events {
+		types = append(types, e.EventType)
+	}
+	require.NotContains(t, types, "user.upsert")
+	require.Contains(t, types, "balance.snapshot")
 }

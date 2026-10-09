@@ -20,8 +20,9 @@
 //	                              this are deleted (at most hourly); 0 disables
 //
 // Subcommand `federation-pusher backfill-users [--dry-run]` queues a
-// user.upsert (with password_hash) and balance.snapshot for every existing
-// non-admin user and exits; the running pusher then delivers them. It needs
+// balance.snapshot for every existing user, plus a user.upsert (with
+// password_hash) for non-admins, and exits; the running pusher then delivers
+// them. It needs
 // only the database settings, not the FEDERATION_OVERSEAS_* ones.
 //
 // Known limitation: created overseas mirror accounts get a random password

@@ -66,21 +66,26 @@ func TestApiKeyBalanceBelowAuthThreshold_EnabledButNoHookFallsBackToPlainBalance
 	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg), "no hook wired: falls back to the plain balance <= 0 check")
 }
 
-func TestApiKeyBalanceBelowAuthThreshold_SkipsUsersWithoutFederation(t *testing.T) {
+func TestApiKeyBalanceBelowAuthThreshold_SkipsUsersWithoutWatermark(t *testing.T) {
 	withFederationHook(t, func(ctx context.Context, userID int64, balance float64, watermarkSeq int64) (float64, error) {
-		t.Fatal("admins and users that never received a mainland watermark must use their local balance")
+		t.Fatal("users that never received a mainland watermark must use their local balance")
 		return 0, nil
 	})
 
 	cfg := &config.Config{}
 	cfg.Federation.AdmissionCheckEnabled = true
-	for name, u := range map[string]*service.User{
-		"local-only user":            {ID: 1, Balance: 5, Role: service.RoleUser},
-		"admin without watermark":    {ID: 2, Balance: 5, Role: service.RoleAdmin},
-		"admin with stale watermark": {ID: 3, Balance: 5, Role: service.RoleAdmin, FederationUsageWatermarkSeq: 42},
-	} {
-		require.False(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg), name)
-	}
-	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), &service.User{ID: 4, Balance: 0, Role: service.RoleAdmin}, cfg),
+	require.False(t, apiKeyBalanceBelowAuthThreshold(context.Background(), &service.User{ID: 1, Balance: 5}, cfg))
+	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), &service.User{ID: 2, Balance: 0}, cfg),
 		"skipping the formula still rejects an exhausted local balance")
+}
+
+func TestApiKeyBalanceBelowAuthThreshold_FederatedAdminUsesHook(t *testing.T) {
+	withFederationHook(t, func(ctx context.Context, userID int64, balance float64, watermarkSeq int64) (float64, error) {
+		return -1, nil
+	})
+
+	cfg := &config.Config{}
+	cfg.Federation.AdmissionCheckEnabled = true
+	u := &service.User{ID: 3, Balance: 5, Role: service.RoleAdmin, FederationUsageWatermarkSeq: 42}
+	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg), "admin balances are federated, so admins get the watermark check too")
 }

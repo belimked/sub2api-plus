@@ -626,18 +626,26 @@ func TestPusher_UserUpsertWithoutHashSkipsPasswordCall(t *testing.T) {
 	require.Empty(t, fake.passwordBodies)
 }
 
-// Both deployments may share an admin email; the pusher must never touch an
-// overseas admin, for user.upsert or balance.snapshot.
-func TestPusher_NeverTouchesOverseasAdmin(t *testing.T) {
+// Both deployments may share an admin email: user.upsert must never touch an
+// overseas admin, but balance.snapshot updates it (admin balances are shared).
+func TestPusher_OverseasAdminGetsBalanceButNotIdentity(t *testing.T) {
 	ctx := context.Background()
 	client := newPusherTestClient(t)
 	upsert := insertUserUpsertRowWithHash(t, ctx, client, "admin@sub2api.local", testPasswordHash)
-	snapshot := insertBalanceSnapshotRow(t, ctx, client, "admin@sub2api.local", 5, 0)
+	snapshot := insertBalanceSnapshotRow(t, ctx, client, "admin@sub2api.local", 5, 7)
 	fake := &passwordSyncServer{existing: &federation.RemoteUser{ID: 21, Email: "admin@sub2api.local", Status: "active", Role: "admin"}}
 	mux := fake.handler("admin@sub2api.local")
-	var balanceCalls int
+	var balanceBodies, watermarkBodies []map[string]any
 	mux.HandleFunc("/api/v1/admin/users/21/balance", func(w http.ResponseWriter, r *http.Request) {
-		balanceCalls++
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		balanceBodies = append(balanceBodies, body)
+		jsonOK(w, map[string]any{"message": "ok"})
+	})
+	mux.HandleFunc("/api/v1/admin/users/21/federation-usage-watermark", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		watermarkBodies = append(watermarkBodies, body)
 		jsonOK(w, map[string]any{"message": "ok"})
 	})
 	server := httptest.NewServer(mux)
@@ -646,13 +654,54 @@ func TestPusher_NeverTouchesOverseasAdmin(t *testing.T) {
 	p := newTestPusher(t, client, server.URL)
 	require.NoError(t, p.runOnce(ctx))
 
-	for _, id := range []int64{upsert.ID, snapshot.ID} {
-		got, err := client.FederationOutbox.Get(ctx, id)
-		require.NoError(t, err)
-		require.Equal(t, "failed", got.Status)
-	}
+	gotUpsert, err := client.FederationOutbox.Get(ctx, upsert.ID)
+	require.NoError(t, err)
+	require.Equal(t, "failed", gotUpsert.Status)
 	require.Empty(t, fake.passwordBodies)
-	require.Zero(t, balanceCalls)
+
+	gotSnapshot, err := client.FederationOutbox.Get(ctx, snapshot.ID)
+	require.NoError(t, err)
+	require.Equal(t, "delivered", gotSnapshot.Status)
+	require.Equal(t, []map[string]any{{"balance": 5.0, "operation": "set"}}, balanceBodies)
+	require.Equal(t, []map[string]any{{"usage_seq": 7.0}}, watermarkBodies)
+}
+
+// No user.upsert ever creates an admin mirror, so a mainland admin without an
+// overseas account is skipped instead of retried; a regular user still waits.
+func TestPusher_SkipsAdminSnapshotWithoutOverseasAccount(t *testing.T) {
+	for _, tc := range []struct {
+		role       string
+		wantStatus string
+	}{
+		{role: "admin", wantStatus: "delivered"},
+		{role: "user", wantStatus: "pending"},
+	} {
+		t.Run(tc.role, func(t *testing.T) {
+			ctx := context.Background()
+			client := newPusherTestClient(t)
+			local, err := client.User.Create().SetEmail("mainland-only@example.com").SetPasswordHash("x").SetRole(tc.role).Save(ctx)
+			require.NoError(t, err)
+			payload, err := json.Marshal(outboxBalancePayload{ID: local.ID, Email: local.Email, Balance: 5})
+			require.NoError(t, err)
+			row, err := client.FederationOutbox.Create().
+				SetAggregateType("user").
+				SetAggregateID(fmt.Sprintf("%d", local.ID)).
+				SetEventType("balance.snapshot").
+				SetPayload(string(payload)).
+				Save(ctx)
+			require.NoError(t, err)
+			fake := &passwordSyncServer{}
+			server := httptest.NewServer(fake.handler(local.Email))
+			defer server.Close()
+
+			p := newTestPusher(t, client, server.URL)
+			require.NoError(t, p.runOnce(ctx))
+
+			got, err := client.FederationOutbox.Get(ctx, row.ID)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, got.Status)
+		})
+	}
 }
 
 // Overseas without federation.accept_password_hash answers 404: the row fails
@@ -681,7 +730,7 @@ func TestPusher_PasswordSyncDisabledOverseasFailsWithoutLeakingHash(t *testing.T
 	require.NotContains(t, logs.String(), testPasswordHash)
 }
 
-func TestBackfillUsers_QueuesNonAdminUsersOnly(t *testing.T) {
+func TestBackfillUsers_QueuesAdminBalanceButNotIdentity(t *testing.T) {
 	ctx := context.Background()
 	client := newPusherTestClient(t)
 	mk := func(email, role string) *dbent.User {
@@ -690,28 +739,31 @@ func TestBackfillUsers_QueuesNonAdminUsersOnly(t *testing.T) {
 		return u
 	}
 	regular := mk("backfill-user@example.com", "user")
-	mk("backfill-admin@example.com", "admin")
+	admin := mk("backfill-admin@example.com", "admin")
 	gone := mk("backfill-deleted@example.com", "user")
 	require.NoError(t, client.User.DeleteOneID(gone.ID).Exec(ctx))
 
 	n, err := backfillUsers(ctx, client, true)
 	require.NoError(t, err)
-	require.Equal(t, 1, n, "dry run counts only live non-admin users")
+	require.Equal(t, 2, n, "dry run counts every live user")
 	count, err := client.FederationOutbox.Query().Count(ctx)
 	require.NoError(t, err)
 	require.Zero(t, count, "dry run writes nothing")
 
 	n, err = backfillUsers(ctx, client, false)
 	require.NoError(t, err)
-	require.Equal(t, 1, n)
+	require.Equal(t, 2, n)
 	rows, err := client.FederationOutbox.Query().Order(dbent.Asc(federationoutbox.FieldID)).All(ctx)
 	require.NoError(t, err)
-	require.Len(t, rows, 2)
-	require.Equal(t, "user.upsert", rows[0].EventType)
-	require.Equal(t, "balance.snapshot", rows[1].EventType)
+	var got []string
 	for _, r := range rows {
-		require.Equal(t, fmt.Sprintf("%d", regular.ID), r.AggregateID)
+		got = append(got, r.EventType+":"+r.AggregateID)
 	}
+	require.Equal(t, []string{
+		fmt.Sprintf("user.upsert:%d", regular.ID),
+		fmt.Sprintf("balance.snapshot:%d", regular.ID),
+		fmt.Sprintf("balance.snapshot:%d", admin.ID),
+	}, got, "admins get a balance.snapshot but never a user.upsert")
 	var payload outboxUserPayload
 	require.NoError(t, json.Unmarshal([]byte(rows[0].Payload), &payload))
 	require.Equal(t, "$2a$10$backfill-user@example.com", payload.PasswordHash)
