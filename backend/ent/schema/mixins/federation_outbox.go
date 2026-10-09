@@ -30,7 +30,7 @@ func FederationOutboxEnabled() bool { return federationOutboxEnabled.Load() }
 // FederationOutboxMixin 在 User 创建、或身份字段(email/status/password_hash)
 // 变更时，向 federation_outbox_events 写入一条 "user.upsert" 事件（payload 带
 // bcrypt password_hash，海外原样写入，使同一密码两边可登录）。管理员账号
-// (role=admin) 从不产生联邦事件：两边管理员邮箱可能相同，同步会覆盖对端管理员。
+// (role=admin) 只同步余额、不产生 user.upsert：两边管理员邮箱可能相同，同步身份会覆盖对端管理员。
 //
 // 铁律：
 //   - 只写 outbox，绝不在此发起网络调用；跨境投递交给外部 pusher。
@@ -82,11 +82,8 @@ func (FederationOutboxMixin) Hooks() []ent.Hook {
 				if !ok {
 					return v, fmt.Errorf("federation outbox: unexpected mutation result type %T", v)
 				}
-				if u.Role == domain.RoleAdmin {
-					return v, nil
-				}
 				client := m.Client()
-				if emitIdentity {
+				if emitIdentity && u.Role != domain.RoleAdmin {
 					if err := EmitUserUpsertOutbox(ctx, client, u); err != nil {
 						return v, fmt.Errorf("federation outbox: emit user.upsert: %w", err)
 					}

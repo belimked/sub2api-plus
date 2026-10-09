@@ -177,7 +177,7 @@ func (s *UserRepoSuite) TestFederationOutboxDisabled_BalancePathsEmitNothing() {
 	s.Require().Zero(count, "federation.outbox_enabled=false must not write any outbox row, including User.Create()'s")
 }
 
-func (s *UserRepoSuite) TestFederationBalanceSnapshot_AdminUsersEmitNothing() {
+func (s *UserRepoSuite) TestFederationBalanceSnapshot_AdminBalancesAreFederated() {
 	s.enableFederationOutbox()
 	admin := s.mustCreateUser(&service.User{Email: "federation-admin-balance@test.com", Role: service.RoleAdmin, Balance: 10})
 
@@ -189,5 +189,13 @@ func (s *UserRepoSuite) TestFederationBalanceSnapshot_AdminUsersEmitNothing() {
 	_, err = s.repo.DeductAvailableBalance(s.ctx, admin.ID, 1)
 	s.Require().NoError(err)
 
-	s.Require().Empty(s.federationBalanceSnapshotEvents(admin.ID), "admin balance changes must never be federated")
+	events := s.federationBalanceSnapshotEvents(admin.ID)
+	s.Require().NotEmpty(events, "admin balances are shared with the overseas mirror")
+	s.Require().InDelta(6, events[len(events)-1].Balance, 0.000001)
+
+	upserts, err := s.client.FederationOutbox.Query().
+		Where(federationoutbox.AggregateIDEQ(fmt.Sprintf("%d", admin.ID)), federationoutbox.EventTypeEQ("user.upsert")).
+		Count(s.ctx)
+	s.Require().NoError(err)
+	s.Require().Zero(upserts, "admin identity is never federated")
 }

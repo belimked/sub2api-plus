@@ -106,7 +106,7 @@ func TestUsageBillingRepositoryBatchImage_EmitsFederationBalanceSnapshot(t *test
 	require.InDelta(t, 98.75, events[1].Balance, 0.000001)
 }
 
-func TestUsageBillingRepositoryApply_FederationSnapshotSkippedWhenDisabledOrAdmin(t *testing.T) {
+func TestUsageBillingRepositoryApply_FederationSnapshotSkippedWhenDisabledButEmittedForAdmin(t *testing.T) {
 	ctx := context.Background()
 
 	repo, user, apiKey := newUsageBillingFederationFixture(t, domain.RoleUser)
@@ -124,5 +124,7 @@ func TestUsageBillingRepositoryApply_FederationSnapshotSkippedWhenDisabledOrAdmi
 	})
 	require.NoError(t, err)
 	require.True(t, result.Applied)
-	require.Empty(t, usageBillingFederationSnapshots(t, ctx, admin.ID))
+	events := usageBillingFederationSnapshots(t, ctx, admin.ID)
+	require.NotEmpty(t, events, "admin balances are federated")
+	require.InDelta(t, 99, events[len(events)-1].Balance, 0.000001)
 }

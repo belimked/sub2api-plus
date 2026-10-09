@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -27,6 +28,10 @@ func newOverseasClient(cfg pusherConfig, logger *slog.Logger) *overseasClient {
 }
 
 func isRetryable(err error) bool { return federation.IsRetryable(err) }
+
+// errOverseasUserMissing marks a balance.snapshot whose overseas mirror does
+// not exist (yet).
+var errOverseasUserMissing = errors.New("no overseas user")
 
 // adminRole mirrors domain.RoleAdmin as the overseas admin API reports it.
 const adminRole = "admin"
@@ -110,19 +115,18 @@ func (c *overseasClient) upsertUser(ctx context.Context, idempotencyKey, email, 
 
 // applyBalanceSnapshot sets the overseas mirror's balance and, if this
 // snapshot's watermark says anything meaningful (asOfUsageSeq > 0), bumps
-// its federation_usage_watermark_seq too. The user must already exist
-// overseas (created by a user.upsert event) -- if not, this is retryable so
-// it waits for that event to land rather than failing terminally.
+// its federation_usage_watermark_seq too. Admin mirrors are updated as well:
+// balances are shared, only admin identity is never federated. The user must
+// already exist overseas (created by a user.upsert event, or by hand for an
+// admin) -- if not, this is retryable so it waits for that event to land
+// rather than failing terminally.
 func (c *overseasClient) applyBalanceSnapshot(ctx context.Context, idempotencyKey, email string, balance float64, asOfUsageSeq int64) error {
 	u, err := c.api.FindUserByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
 	if u == nil {
-		return federation.RetryableErr(fmt.Errorf("no overseas user for email %s yet; waiting for user.upsert to land first", email))
-	}
-	if u.Role == adminRole {
-		return federation.TerminalErr(fmt.Errorf("overseas user %s is an admin; admin accounts are never federated", email))
+		return federation.RetryableErr(fmt.Errorf("%w for email %s yet; waiting for user.upsert to land first", errOverseasUserMissing, email))
 	}
 
 	if balance > 0 {

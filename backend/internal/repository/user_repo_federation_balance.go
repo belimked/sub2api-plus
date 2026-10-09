@@ -9,7 +9,6 @@ import (
 
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
 	"github.com/LuckyKuang/sub2api-plus/ent/schema/mixins"
-	"github.com/LuckyKuang/sub2api-plus/internal/domain"
 	"github.com/LuckyKuang/sub2api-plus/internal/service"
 )
 
@@ -42,9 +41,10 @@ type federationBalancePayload struct {
 //
 // No-op unless federation.outbox_enabled is on (mixins.FederationOutboxEnabled),
 // so non-federated deployments pay nothing extra on the billing hot path.
-// Admin accounts are never federated (see FederationOutboxMixin).
-func emitFederationBalanceOutbox(ctx context.Context, client *dbent.Client, userID int64, email, role string, balance float64, watermarkSeq int64) {
-	if !mixins.FederationOutboxEnabled() || role == domain.RoleAdmin {
+// Admin balances are federated too; only admin identity is not (see
+// FederationOutboxMixin).
+func emitFederationBalanceOutbox(ctx context.Context, client *dbent.Client, userID int64, email string, balance float64, watermarkSeq int64) {
+	if !mixins.FederationOutboxEnabled() {
 		return
 	}
 	payload, err := json.Marshal(federationBalancePayload{
@@ -82,18 +82,18 @@ func emitFederationBalanceOutboxByID(ctx context.Context, client *dbent.Client, 
 		slog.Error("federation balance outbox: refetch user", "user_id", userID, "error", err)
 		return
 	}
-	emitFederationBalanceOutbox(ctx, client, u.ID, u.Email, u.Role, u.Balance, u.FederationUsageWatermarkSeq)
+	emitFederationBalanceOutbox(ctx, client, u.ID, u.Email, u.Balance, u.FederationUsageWatermarkSeq)
 }
 
 // scanBalanceChangeWithFederation runs an AdjustBalance/SetBalance statement
-// that RETURNs old balance, new balance, email, role and
-// federation_usage_watermark_seq -- the last three feed the balance.snapshot
+// that RETURNs old balance, new balance, email and
+// federation_usage_watermark_seq -- the last two feed the balance.snapshot
 // payload without a second query on the already-atomic UPDATE. ok is false
 // when the statement matched no row.
-func scanBalanceChangeWithFederation(ctx context.Context, client *dbent.Client, query string, args ...any) (change service.BalanceChange, email, role string, watermarkSeq int64, ok bool, err error) {
+func scanBalanceChangeWithFederation(ctx context.Context, client *dbent.Client, query string, args ...any) (change service.BalanceChange, email string, watermarkSeq int64, ok bool, err error) {
 	rows, err := client.QueryContext(ctx, query, args...)
 	if err != nil {
-		return service.BalanceChange{}, "", "", 0, false, err
+		return service.BalanceChange{}, "", 0, false, err
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
@@ -102,14 +102,14 @@ func scanBalanceChangeWithFederation(ctx context.Context, client *dbent.Client, 
 	}()
 	if !rows.Next() {
 		if rowsErr := rows.Err(); rowsErr != nil {
-			return service.BalanceChange{}, "", "", 0, false, rowsErr
+			return service.BalanceChange{}, "", 0, false, rowsErr
 		}
-		return service.BalanceChange{}, "", "", 0, false, nil
+		return service.BalanceChange{}, "", 0, false, nil
 	}
-	if scanErr := rows.Scan(&change.Old, &change.New, &email, &role, &watermarkSeq); scanErr != nil {
-		return service.BalanceChange{}, "", "", 0, false, scanErr
+	if scanErr := rows.Scan(&change.Old, &change.New, &email, &watermarkSeq); scanErr != nil {
+		return service.BalanceChange{}, "", 0, false, scanErr
 	}
-	return change, email, role, watermarkSeq, true, rows.Err()
+	return change, email, watermarkSeq, true, rows.Err()
 }
 
 // emitFederationBalanceOutboxTx writes a balance.snapshot outbox row inside a
@@ -135,8 +135,8 @@ func emitFederationBalanceOutboxTx(ctx context.Context, tx *sql.Tx, userID int64
 		       json_build_object('id', id, 'email', email, 'balance', balance,
 		                         'as_of_usage_seq', federation_usage_watermark_seq)::text
 		FROM users
-		WHERE id = $1 AND role <> $2
-	`, userID, domain.RoleAdmin)
+		WHERE id = $1
+	`, userID)
 	if err != nil {
 		slog.Error("federation balance outbox: insert", "user_id", userID, "error", err)
 		if _, rbErr := tx.ExecContext(ctx, "ROLLBACK TO SAVEPOINT federation_outbox"); rbErr != nil {

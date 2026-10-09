@@ -916,9 +916,9 @@ func (r *userRepository) DeductAvailableBalance(ctx context.Context, id int64, a
 			SET balance = target.balance - LEAST($1, GREATEST(target.balance, 0)), updated_at = NOW()
 			FROM target
 			WHERE u.id = target.id AND u.deleted_at IS NULL
-			RETURNING target.balance - u.balance AS deducted, u.balance, u.email, u.role, u.federation_usage_watermark_seq
+			RETURNING target.balance - u.balance AS deducted, u.balance, u.email, u.federation_usage_watermark_seq
 		)
-		SELECT deducted, balance, email, role, federation_usage_watermark_seq FROM updated
+		SELECT deducted, balance, email, federation_usage_watermark_seq FROM updated
 	`
 	client := clientFromContext(ctx, r.client)
 	rows, err := client.QueryContext(ctx, updateSQL, amount, id)
@@ -939,17 +939,16 @@ func (r *userRepository) DeductAvailableBalance(ctx context.Context, id int64, a
 	var (
 		newBalance   float64
 		email        string
-		role         string
 		watermarkSeq int64
 	)
-	if err := rows.Scan(&deducted, &newBalance, &email, &role, &watermarkSeq); err != nil {
+	if err := rows.Scan(&deducted, &newBalance, &email, &watermarkSeq); err != nil {
 		return 0, err
 	}
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
 	if deducted > 0 {
-		emitFederationBalanceOutbox(ctx, client, id, email, role, newBalance, watermarkSeq)
+		emitFederationBalanceOutbox(ctx, client, id, email, newBalance, watermarkSeq)
 	}
 	return deducted, nil
 }
@@ -962,15 +961,15 @@ func (r *userRepository) AdjustBalance(ctx context.Context, id int64, delta floa
 		UPDATE users
 		SET balance = balance + $1, updated_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL AND balance + $1 >= 0
-		RETURNING balance - $1, balance, email, role, federation_usage_watermark_seq
+		RETURNING balance - $1, balance, email, federation_usage_watermark_seq
 	`
 	client := clientFromContext(ctx, r.client)
-	change, email, role, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, delta, id)
+	change, email, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, delta, id)
 	if err != nil {
 		return service.BalanceChange{}, err
 	}
 	if ok {
-		emitFederationBalanceOutbox(ctx, client, id, email, role, change.New, watermarkSeq)
+		emitFederationBalanceOutbox(ctx, client, id, email, change.New, watermarkSeq)
 		return change, nil
 	}
 
@@ -997,17 +996,17 @@ func (r *userRepository) SetBalance(ctx context.Context, id int64, value float64
 		SET balance = $1, updated_at = NOW()
 		FROM (SELECT id, balance FROM users WHERE id = $2 AND deleted_at IS NULL) AS prev
 		WHERE u.id = prev.id AND u.deleted_at IS NULL
-		RETURNING prev.balance, u.balance, u.email, u.role, u.federation_usage_watermark_seq
+		RETURNING prev.balance, u.balance, u.email, u.federation_usage_watermark_seq
 	`
 	client := clientFromContext(ctx, r.client)
-	change, email, role, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, value, id)
+	change, email, watermarkSeq, ok, err := scanBalanceChangeWithFederation(ctx, client, updateSQL, value, id)
 	if err != nil {
 		return service.BalanceChange{}, err
 	}
 	if !ok {
 		return service.BalanceChange{}, service.ErrUserNotFound
 	}
-	emitFederationBalanceOutbox(ctx, client, id, email, role, change.New, watermarkSeq)
+	emitFederationBalanceOutbox(ctx, client, id, email, change.New, watermarkSeq)
 	return change, nil
 }
 

@@ -80,16 +80,19 @@ password works overseas. The overseas server must set
 otherwise the endpoint returns 404 and the row fails. The hash is never
 logged or written to `last_error`.
 
-Admin accounts are never federated: the mainland emits nothing for role
-`admin`, and an overseas user with role `admin` is never modified (the row
-fails terminally), so a shared admin email cannot overwrite the overseas
-admin. Deleting a mainland user emits no event; remove the overseas mirror by
+Admin identity is never federated: the mainland emits no `user.upsert` for
+role `admin`, and `user.upsert` never modifies an overseas user with role
+`admin` (the row fails terminally), so a shared admin email cannot overwrite
+the overseas admin's account. Admin **balances** are federated: every
+`balance.snapshot` (admins included) is applied to the overseas user with the
+same email, even an overseas admin. Create the overseas admin by hand; until
+it exists, a mainland admin's snapshots are skipped. Deleting a mainland user emits no event; remove the overseas mirror by
 hand.
 
 ## Backfill
 
 Users created before the outbox was enabled have no rows. Queue one
-`user.upsert` + `balance.snapshot` per live non-admin user, then let the
+`balance.snapshot` per live user, plus a `user.upsert` for non-admins, then let the
 running pusher deliver them:
 
 ```sh

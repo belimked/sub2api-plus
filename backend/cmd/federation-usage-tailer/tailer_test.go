@@ -16,7 +16,6 @@ import (
 
 	dbent "github.com/LuckyKuang/sub2api-plus/ent"
 	"github.com/LuckyKuang/sub2api-plus/ent/enttest"
-	"github.com/LuckyKuang/sub2api-plus/internal/domain"
 	"github.com/LuckyKuang/sub2api-plus/internal/federation"
 	"github.com/stretchr/testify/require"
 
@@ -399,33 +398,22 @@ func TestTailer_SkipsLocalOnlyUserWithoutBlocking(t *testing.T) {
 	require.Nil(t, cursor.LastError)
 }
 
-func TestTailer_SkipsAdminOnEitherSideWithoutBlocking(t *testing.T) {
+// Admin balances are shared with mainland, so admin usage is billed like anyone's.
+func TestTailer_BillsAdminUsage(t *testing.T) {
 	ctx := context.Background()
 	client := newTailerTestClient(t)
-	fed := insertLocalUser(t, ctx, client, "tailer-fed@example.com")
-	localAdmin := insertLocalUser(t, ctx, client, "tailer-local-admin@example.com")
-	_, err := client.User.UpdateOneID(localAdmin.ID).SetRole(domain.RoleAdmin).Save(ctx)
+	admin := insertLocalUser(t, ctx, client, "tailer-admin@example.com")
+	_, err := client.User.UpdateOneID(admin.ID).SetRole("admin").Save(ctx)
 	require.NoError(t, err)
-	mainlandAdmin := insertLocalUser(t, ctx, client, "tailer-mainland-admin@example.com")
-	accountID, apiKeyID := insertUsageFixtures(t, ctx, client, fed.ID)
-	insertUsageLog(t, ctx, client, localAdmin.ID, accountID, apiKeyID, 3)
-	insertUsageLog(t, ctx, client, mainlandAdmin.ID, accountID, apiKeyID, 4)
-	last := insertUsageLog(t, ctx, client, fed.ID, accountID, apiKeyID, 2)
+	accountID, apiKeyID := insertUsageFixtures(t, ctx, client, admin.ID)
+	insertUsageLog(t, ctx, client, admin.ID, accountID, apiKeyID, 3)
 
-	var billedPaths []string
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
-		jsonOK(w, map[string]string{"access_token": "test-token"})
-	})
-	mux.HandleFunc("/api/v1/admin/users", func(w http.ResponseWriter, r *http.Request) {
-		jsonOK(w, map[string]any{"items": []federation.RemoteUser{
-			{ID: 42, Email: "tailer-fed@example.com", Status: "active", Role: "user"},
-			{ID: 43, Email: "tailer-local-admin@example.com", Status: "active", Role: "user"},
-			{ID: 44, Email: "tailer-mainland-admin@example.com", Status: "active", Role: "admin"},
-		}})
-	})
-	mux.HandleFunc("/api/v1/admin/users/", func(w http.ResponseWriter, r *http.Request) {
-		billedPaths = append(billedPaths, r.URL.Path)
+	var billed []float64
+	mux := mainlandMux(t, "tailer-admin@example.com", 7, func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		amount, _ := body["balance"].(float64)
+		billed = append(billed, amount)
 		jsonOK(w, map[string]any{"message": "ok"})
 	})
 	server := httptest.NewServer(mux)
@@ -433,15 +421,7 @@ func TestTailer_SkipsAdminOnEitherSideWithoutBlocking(t *testing.T) {
 
 	tl := newTestTailer(t, client, server.URL)
 	require.NoError(t, tl.runOnce(ctx))
-
-	require.Equal(t, []string{
-		"/api/v1/admin/users/42/balance",
-		"/api/v1/admin/users/42/federation-usage-watermark",
-	}, billedPaths, "admin usage on either side must never be billed to or watermarked on mainland")
-	cursor, err := tl.loadOrCreateCursor(ctx)
-	require.NoError(t, err)
-	require.Equal(t, last.ID, cursor.LastDeliveredID)
-	require.Nil(t, cursor.LastError)
+	require.Equal(t, []float64{3}, billed)
 }
 
 // A failed lookup is not a miss: it must block and retry, never skip.
