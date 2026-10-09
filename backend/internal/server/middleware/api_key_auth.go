@@ -405,10 +405,11 @@ func setGroupContext(c *gin.Context, group *service.Group) {
 //
 // cfg.Federation.AdmissionCheckEnabled（默认 false）打开时，比较的不是原始
 // balance，而是水位公式算出的可用余额——见 federation_admission.go。未开启时
-// 行为与之前完全一致。
+// 行为与之前完全一致。只有收到过主站快照水位（>0）的非管理员才是联邦用户；
+// 管理员和纯本地用户的本地余额已含全部本地扣费，再减一遍会重复扣。
 func apiKeyBalanceBelowAuthThreshold(ctx context.Context, u *service.User, cfg *config.Config) bool {
 	balance := u.Balance
-	if cfg != nil && cfg.Federation.AdmissionCheckEnabled {
+	if cfg != nil && cfg.Federation.AdmissionCheckEnabled && !u.IsAdmin() && u.FederationUsageWatermarkSeq > 0 {
 		balance = federationAvailableBalance(ctx, u.ID, u.Balance, u.FederationUsageWatermarkSeq)
 	}
 	return balance <= 0

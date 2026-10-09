@@ -49,6 +49,11 @@ deployment's own `usage_log`. Federation-specific settings:
   can share one instance. A failed lookup (network error, mainland 5xx) is
   not a miss and still blocks the cursor. Misses aren't cached, so a user
   later created on mainland is picked up without a restart.
+- Rows of an **admin** — admin on this deployment, or whose mainland account
+  is an admin — are skipped and logged the same way. Admin accounts are never
+  federated (the mainland outbox and pusher exclude them), so mainland never
+  pushes their balance or watermark back; billing them on mainland would
+  charge the usage twice.
 
 ## Running as a compose service
 

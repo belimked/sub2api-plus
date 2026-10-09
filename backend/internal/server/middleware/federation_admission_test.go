@@ -52,7 +52,7 @@ func TestApiKeyBalanceBelowAuthThreshold_HookErrorFailsOpenToPlainBalance(t *tes
 
 	cfg := &config.Config{}
 	cfg.Federation.AdmissionCheckEnabled = true
-	u := &service.User{ID: 1, Balance: 5}
+	u := &service.User{ID: 1, Balance: 5, FederationUsageWatermarkSeq: 42}
 	require.False(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg),
 		"a federation query error must not block a user who has a positive plain balance")
 }
@@ -64,4 +64,23 @@ func TestApiKeyBalanceBelowAuthThreshold_EnabledButNoHookFallsBackToPlainBalance
 	cfg.Federation.AdmissionCheckEnabled = true
 	u := &service.User{ID: 1, Balance: 0}
 	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg), "no hook wired: falls back to the plain balance <= 0 check")
+}
+
+func TestApiKeyBalanceBelowAuthThreshold_SkipsUsersWithoutFederation(t *testing.T) {
+	withFederationHook(t, func(ctx context.Context, userID int64, balance float64, watermarkSeq int64) (float64, error) {
+		t.Fatal("admins and users that never received a mainland watermark must use their local balance")
+		return 0, nil
+	})
+
+	cfg := &config.Config{}
+	cfg.Federation.AdmissionCheckEnabled = true
+	for name, u := range map[string]*service.User{
+		"local-only user":            {ID: 1, Balance: 5, Role: service.RoleUser},
+		"admin without watermark":    {ID: 2, Balance: 5, Role: service.RoleAdmin},
+		"admin with stale watermark": {ID: 3, Balance: 5, Role: service.RoleAdmin, FederationUsageWatermarkSeq: 42},
+	} {
+		require.False(t, apiKeyBalanceBelowAuthThreshold(context.Background(), u, cfg), name)
+	}
+	require.True(t, apiKeyBalanceBelowAuthThreshold(context.Background(), &service.User{ID: 4, Balance: 0, Role: service.RoleAdmin}, cfg),
+		"skipping the formula still rejects an exhausted local balance")
 }
