@@ -38,6 +38,20 @@
           <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
         </a>
 
+        <button
+          v-if="user && quickAccessUrl"
+          type="button"
+          :disabled="quickAccessKeys.length === 0"
+          :title="quickAccessKeys.length === 0 ? t('nav.quickAccessNoKey') : t('nav.quickAccess')"
+          :aria-label="t('nav.quickAccess')"
+          class="flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50/70 px-2.5 py-1.5 font-mono text-sm font-medium text-primary-700 transition-colors hover:border-primary-300 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-primary-200 disabled:hover:bg-primary-50/70 dark:border-primary-800/60 dark:bg-primary-900/20 dark:text-primary-300 dark:hover:bg-primary-900/40"
+          @click="openQuickAccess"
+        >
+          <Icon name="terminal" size="sm" />
+          <span class="hidden sm:inline">{{ t('nav.quickAccess') }}</span>
+          <span class="hidden animate-pulse sm:inline" aria-hidden="true">_</span>
+        </button>
+
         <!-- Model Plaza Entry (icon only below sm) -->
         <router-link
           v-if="user && modelPlazaEnabled"
@@ -252,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
@@ -265,6 +279,8 @@ import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 import { resolveRouteMetaKeys } from '@/router/title'
 import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
+import { buildQuickAccessUrl, pickRandom } from '@/utils/quickAccess'
+import { keysAPI } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -280,6 +296,33 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
+const quickAccessUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.quick_access_url || ''))
+const quickAccessKeys = ref<string[]>([])
+
+async function loadQuickAccessKeys() {
+  if (!user.value || !quickAccessUrl.value) {
+    quickAccessKeys.value = []
+    return
+  }
+  try {
+    const res = await keysAPI.list(1, 100, { status: 'active' })
+    quickAccessKeys.value = res.items.map((k) => k.key)
+  } catch {
+    quickAccessKeys.value = []
+  }
+}
+
+function openQuickAccess() {
+  const key = pickRandom(quickAccessKeys.value)
+  if (!key || !quickAccessUrl.value) return
+  window.open(buildQuickAccessUrl(quickAccessUrl.value, key), '_blank', 'noopener,noreferrer')
+}
+
+watch(() => [user.value?.id, quickAccessUrl.value], loadQuickAccessKeys, { immediate: true })
+// Keys created or disabled on the API Keys page must be reflected once the user leaves it.
+watch(() => route.path, (_to, from) => {
+  if (from === '/keys') void loadQuickAccessKeys()
+})
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const availableBalance = computed(() => Number(user.value?.balance || 0))
 const frozenBalance = computed(() => Number(user.value?.frozen_balance || 0))

@@ -160,6 +160,7 @@ type UpdateSettingsRequest struct {
 	APIBaseURL                  string                `json:"api_base_url"`
 	ContactInfo                 string                `json:"contact_info"`
 	DocURL                      string                `json:"doc_url"`
+	QuickAccessURL              string                `json:"quick_access_url"`
 	HomeContent                 string                `json:"home_content"`
 	CompactHomeEnabled          bool                  `json:"compact_home_enabled"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
@@ -684,6 +685,13 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if enabledCaptchaProviders > 1 {
 		response.BadRequest(c, "Multiple captcha providers (Cloudflare Turnstile / Tencent Captcha / Aliyun Captcha) cannot be enabled at the same time")
 		return
+	}
+	req.QuickAccessURL = strings.TrimSpace(req.QuickAccessURL)
+	if req.QuickAccessURL != "" {
+		if err := config.ValidateAbsoluteHTTPURL(req.QuickAccessURL); err != nil {
+			response.BadRequest(c, "Quick access URL must be an absolute http(s) URL")
+			return
+		}
 	}
 	// 阿里云地域 normalize：未发送保留已存值，非法值一律按中国内地落库
 	if _, sent := sentFields["aliyun_captcha_region"]; !sent {
@@ -1722,6 +1730,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		APIBaseURL:                             req.APIBaseURL,
 		ContactInfo:                            req.ContactInfo,
 		DocURL:                                 req.DocURL,
+		QuickAccessURL:                         req.QuickAccessURL,
 		HomeContent:                            req.HomeContent,
 		CompactHomeEnabled:                     req.CompactHomeEnabled,
 		HideCcsImportButton:                    req.HideCcsImportButton,
@@ -2409,6 +2418,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		APIBaseURL:                                             updatedSettings.APIBaseURL,
 		ContactInfo:                                            updatedSettings.ContactInfo,
 		DocURL:                                                 updatedSettings.DocURL,
+		QuickAccessURL:                                         updatedSettings.QuickAccessURL,
 		HomeContent:                                            updatedSettings.HomeContent,
 		CompactHomeEnabled:                                     updatedSettings.CompactHomeEnabled,
 		HideCcsImportButton:                                    updatedSettings.HideCcsImportButton,

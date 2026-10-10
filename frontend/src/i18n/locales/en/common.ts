@@ -181,6 +181,8 @@ export default {
     channels: 'Channels',
     availableChannels: 'Available Channels',
     modelPlaza: 'Model Plaza',
+    quickAccess: 'Quick Access',
+    quickAccessNoKey: 'No active API key. Create one first.',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
     plugins: 'Plugins',
