@@ -181,6 +181,8 @@ export default {
     channels: '渠道管理',
     availableChannels: '可用渠道',
     modelPlaza: '模型广场',
+    quickAccess: '立即接入',
+    quickAccessNoKey: '暂无可用的 API Key，请先创建',
     subscriptions: '订阅管理',
     accounts: '账号管理',
     plugins: '插件管理',
