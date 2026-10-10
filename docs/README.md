@@ -16,6 +16,7 @@ below for detailed configuration and maintenance instructions.
 
 - [OpenAI Responses and WebSocket ingress](protocols/OPENAI_RESPONSES.md)
 - [Codex client profile restrictions](protocols/CODEX_CLIENT_PROFILES.md)
+- [API key owner profile (`GET /v1/me`)](protocols/API_KEY_OWNER_PROFILE.md)
 - [Asynchronous image tasks](ASYNC_IMAGE_TASKS.md)
 
 ## Deployment and Operations

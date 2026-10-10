@@ -87,6 +87,15 @@ func TestGatewayRoutesCodexLocalQuotaUsagePathIsRegistered(t *testing.T) {
 	require.True(t, registered[http.MethodGet+" /backend-api/wham/usage"])
 }
 
+func TestGatewayRoutesAPIKeyOwnerProfilePathIsRegistered(t *testing.T) {
+	router := newGatewayRoutesTestRouter()
+	registered := make(map[string]bool)
+	for _, route := range router.Routes() {
+		registered[route.Method+" "+route.Path] = true
+	}
+	require.True(t, registered[http.MethodGet+" /v1/me"])
+}
+
 func TestGatewayRoutesOpenAIAlphaSearchPathsAreRegistered(t *testing.T) {
 	router := newGatewayRoutesTestRouter()
 	registered := make(map[string]bool)
