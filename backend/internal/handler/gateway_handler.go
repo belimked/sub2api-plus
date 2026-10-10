@@ -1588,6 +1588,48 @@ func (h *GatewayHandler) Usage(c *gin.Context) {
 	h.usageUnrestricted(c, ctx, apiKey, subject, usageData, dailyUsage, modelStats)
 }
 
+// Me returns the owner user profile of the authenticated API key.
+// GET /v1/me
+func (h *GatewayHandler) Me(c *gin.Context) {
+	apiKey, ok := middleware2.GetAPIKeyFromContext(c)
+	if !ok {
+		h.errorResponse(c, http.StatusUnauthorized, "authentication_error", "Invalid API key")
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		h.errorResponse(c, http.StatusUnauthorized, "authentication_error", "Invalid API key")
+		return
+	}
+
+	user, err := h.userService.GetByID(c.Request.Context(), subject.UserID)
+	if err != nil {
+		h.errorResponse(c, http.StatusInternalServerError, "api_error", "Failed to get user info")
+		return
+	}
+
+	keyInfo := gin.H{
+		"id":       apiKey.ID,
+		"name":     apiKey.Name,
+		"status":   apiKey.Status,
+		"group_id": apiKey.GroupID,
+	}
+	if apiKey.Group != nil {
+		keyInfo["group_name"] = apiKey.Group.Name
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user_id":     user.ID,
+		"username":    user.Username,
+		"email":       user.Email,
+		"role":        user.Role,
+		"status":      user.Status,
+		"balance":     user.Balance,
+		"concurrency": user.Concurrency,
+		"api_key":     keyInfo,
+	})
+}
+
 // parseUsageDateRange 解析 start_date / end_date query params，默认返回近 30 天范围
 func (h *GatewayHandler) parseUsageDateRange(c *gin.Context) (time.Time, time.Time) {
 	now := timezone.Now()
