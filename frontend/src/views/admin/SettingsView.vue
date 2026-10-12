@@ -6398,6 +6398,28 @@
                 </p>
               </div>
 
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {{ t("admin.settings.site.quickAccessPushSecret") }}
+                </label>
+                <input
+                  v-model="form.quick_access_push_secret"
+                  type="password"
+                  autocomplete="new-password"
+                  class="input font-mono text-sm"
+                  :placeholder="
+                    form.quick_access_push_secret_configured
+                      ? t('admin.settings.site.quickAccessPushSecretConfiguredPlaceholder')
+                      : ''
+                  "
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.site.quickAccessPushSecretHint") }}
+                </p>
+              </div>
+
               <!-- Site Logo Upload -->
               <div>
                 <label
@@ -9575,6 +9597,7 @@ type SettingsForm = Omit<
   channel_monitor_hide_user_ranking: boolean;
   smtp_password: string;
   turnstile_secret_key: string;
+  quick_access_push_secret: string;
   tencent_captcha_app_secret_key: string;
   tencent_captcha_cloud_secret_id: string;
   tencent_captcha_cloud_secret_key: string;
@@ -9656,6 +9679,8 @@ const form = reactive<SettingsForm>({
   contact_info: "",
   doc_url: "",
   quick_access_url: "",
+  quick_access_push_secret: "",
+  quick_access_push_secret_configured: false,
   home_content: "",
   compact_home_enabled: false,
   backend_mode_enabled: false,
@@ -11049,6 +11074,7 @@ async function loadSettings() {
     form.smtp_password = "";
     smtpPasswordManuallyEdited.value = false;
     form.turnstile_secret_key = "";
+    form.quick_access_push_secret = "";
     form.tencent_captcha_app_secret_key = "";
     form.tencent_captcha_cloud_secret_id = "";
     form.tencent_captcha_cloud_secret_key = "";
@@ -11426,6 +11452,7 @@ async function saveSettings() {
       contact_info: form.contact_info,
       doc_url: form.doc_url,
       quick_access_url: form.quick_access_url,
+      quick_access_push_secret: form.quick_access_push_secret || undefined,
       home_content: form.home_content,
       compact_home_enabled: form.compact_home_enabled,
       backend_mode_enabled: form.backend_mode_enabled,
@@ -11789,6 +11816,7 @@ async function saveSettings() {
     form.smtp_password = "";
     smtpPasswordManuallyEdited.value = false;
     form.turnstile_secret_key = "";
+    form.quick_access_push_secret = "";
     form.aliyun_captcha_access_key_secret = "";
     form.linuxdo_connect_client_secret = "";
     form.dingtalk_connect_client_secret = "";

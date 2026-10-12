@@ -379,6 +379,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ContactInfo:                            settings[SettingKeyContactInfo],
 		DocURL:                                 settings[SettingKeyDocURL],
 		QuickAccessURL:                         settings[SettingKeyQuickAccessURL],
+		QuickAccessPushSecretConfigured:        settings[SettingKeyQuickAccessPushSecret] != "",
 		HomeContent:                            settings[SettingKeyHomeContent],
 		CompactHomeEnabled:                     settings[SettingKeyCompactHomeEnabled] == "true",
 		HideCcsImportButton:                    settings[SettingKeyHideCcsImportButton] == "true",

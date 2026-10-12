@@ -1251,3 +1251,13 @@ func mergePlatformQuotaDefaults(dst, src *DefaultPlatformQuotaSetting) {
 		dst.MonthlyLimitUSD = src.MonthlyLimitUSD
 	}
 }
+
+// GetQuickAccessPushConfig returns the quick access entry URL and the shared
+// secret used when pushing newly created API keys to that gateway.
+func (s *SettingService) GetQuickAccessPushConfig(ctx context.Context) (string, string, error) {
+	values, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyQuickAccessURL, SettingKeyQuickAccessPushSecret})
+	if err != nil {
+		return "", "", fmt.Errorf("read quick access push settings: %w", err)
+	}
+	return strings.TrimSpace(values[SettingKeyQuickAccessURL]), strings.TrimSpace(values[SettingKeyQuickAccessPushSecret]), nil
+}

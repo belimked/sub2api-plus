@@ -281,6 +281,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ContactInfo:                                            settings.ContactInfo,
 		DocURL:                                                 settings.DocURL,
 		QuickAccessURL:                                         settings.QuickAccessURL,
+		QuickAccessPushSecretConfigured:                        settings.QuickAccessPushSecretConfigured,
 		HomeContent:                                            settings.HomeContent,
 		CompactHomeEnabled:                                     settings.CompactHomeEnabled,
 		HideCcsImportButton:                                    settings.HideCcsImportButton,
