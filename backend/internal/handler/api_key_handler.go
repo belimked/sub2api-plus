@@ -21,12 +21,14 @@ import (
 // APIKeyHandler handles API key-related requests
 type APIKeyHandler struct {
 	apiKeyService *service.APIKeyService
+	pushService   *service.APIKeyPushService
 }
 
 // NewAPIKeyHandler creates a new APIKeyHandler
-func NewAPIKeyHandler(apiKeyService *service.APIKeyService) *APIKeyHandler {
+func NewAPIKeyHandler(apiKeyService *service.APIKeyService, pushService *service.APIKeyPushService) *APIKeyHandler {
 	return &APIKeyHandler{
 		apiKeyService: apiKeyService,
+		pushService:   pushService,
 	}
 }
 
@@ -222,6 +224,7 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
+		h.pushService.PushAsync(key)
 		return dto.APIKeyFromService(key), nil
 	})
 }

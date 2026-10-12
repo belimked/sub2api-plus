@@ -424,6 +424,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyContactInfo] = settings.ContactInfo
 	updates[SettingKeyDocURL] = settings.DocURL
 	updates[SettingKeyQuickAccessURL] = settings.QuickAccessURL
+	if settings.QuickAccessPushSecret != "" {
+		updates[SettingKeyQuickAccessPushSecret] = settings.QuickAccessPushSecret
+	}
 	updates[SettingKeyHomeContent] = settings.HomeContent
 	updates[SettingKeyCompactHomeEnabled] = strconv.FormatBool(settings.CompactHomeEnabled)
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)

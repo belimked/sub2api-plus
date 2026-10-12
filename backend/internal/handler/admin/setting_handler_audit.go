@@ -338,6 +338,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.QuickAccessURL != after.QuickAccessURL {
 		changed = append(changed, "quick_access_url")
 	}
+	if req.QuickAccessPushSecret != "" {
+		changed = append(changed, "quick_access_push_secret")
+	}
 	if before.HomeContent != after.HomeContent {
 		changed = append(changed, "home_content")
 	}

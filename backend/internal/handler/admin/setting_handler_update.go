@@ -161,6 +161,7 @@ type UpdateSettingsRequest struct {
 	ContactInfo                 string                `json:"contact_info"`
 	DocURL                      string                `json:"doc_url"`
 	QuickAccessURL              string                `json:"quick_access_url"`
+	QuickAccessPushSecret       string                `json:"quick_access_push_secret"`
 	HomeContent                 string                `json:"home_content"`
 	CompactHomeEnabled          bool                  `json:"compact_home_enabled"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
@@ -687,6 +688,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 	req.QuickAccessURL = strings.TrimSpace(req.QuickAccessURL)
+	req.QuickAccessPushSecret = strings.TrimSpace(req.QuickAccessPushSecret)
 	if req.QuickAccessURL != "" {
 		if err := config.ValidateAbsoluteHTTPURL(req.QuickAccessURL); err != nil {
 			response.BadRequest(c, "Quick access URL must be an absolute http(s) URL")
@@ -1731,6 +1733,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                            req.ContactInfo,
 		DocURL:                                 req.DocURL,
 		QuickAccessURL:                         req.QuickAccessURL,
+		QuickAccessPushSecret:                  req.QuickAccessPushSecret,
 		HomeContent:                            req.HomeContent,
 		CompactHomeEnabled:                     req.CompactHomeEnabled,
 		HideCcsImportButton:                    req.HideCcsImportButton,
@@ -2419,6 +2422,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                                            updatedSettings.ContactInfo,
 		DocURL:                                                 updatedSettings.DocURL,
 		QuickAccessURL:                                         updatedSettings.QuickAccessURL,
+		QuickAccessPushSecretConfigured:                        updatedSettings.QuickAccessPushSecretConfigured,
 		HomeContent:                                            updatedSettings.HomeContent,
 		CompactHomeEnabled:                                     updatedSettings.CompactHomeEnabled,
 		HideCcsImportButton:                                    updatedSettings.HideCcsImportButton,

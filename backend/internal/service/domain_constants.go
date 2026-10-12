@@ -390,6 +390,7 @@ const (
 	SettingKeyContactInfo                 = "contact_info"                  // 客服联系方式
 	SettingKeyDocURL                      = "doc_url"                       // 文档链接
 	SettingKeyQuickAccessURL              = "quick_access_url"              // 立即接入地址（前台按钮跳转，附带 apikey 参数）
+	SettingKeyQuickAccessPushSecret       = "quick_access_push_secret"      // 新建 API Key 推送到立即接入网关时的共享密钥（X-Sub2api-Token）
 	SettingKeyHomeContent                 = "home_content"                  // 首页内容（支持 Markdown/HTML，或 URL 作为 iframe src）
 	SettingKeyCompactHomeEnabled          = "compact_home_enabled"          // 是否启用内置简洁首页
 	SettingKeyHideCcsImportButton         = "hide_ccs_import_button"        // 是否隐藏 API Keys 页面的导入 CCS 按钮
