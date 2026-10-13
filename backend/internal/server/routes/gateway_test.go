@@ -94,6 +94,7 @@ func TestGatewayRoutesAPIKeyOwnerProfilePathIsRegistered(t *testing.T) {
 		registered[route.Method+" "+route.Path] = true
 	}
 	require.True(t, registered[http.MethodGet+" /v1/me"])
+	require.True(t, registered[http.MethodGet+" /v1/me/keys"])
 }
 
 func TestGatewayRoutesOpenAIAlphaSearchPathsAreRegistered(t *testing.T) {
