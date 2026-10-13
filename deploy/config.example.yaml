@@ -291,6 +291,9 @@ gateway:
   #
   # 注意：开启后会影响所有客户端的行为（不仅限于 VS Code / Codex CLI），请谨慎开启。
   force_codex_cli: false
+  # GET /v1/me/keys token secret: X-Auth-Token = base64(sha256(secret + timestamp)). Empty disables the endpoint.
+  # GET /v1/me/keys 验证密钥：X-Auth-Token = base64(sha256(密钥 + 时间戳))；留空则禁用该接口。
+  owner_keys_token_secret: ""
   # Enable Codex image-generation bridge injection for /openai/v1/responses.
   # 是否为 Codex /responses 请求自动注入 image_generation 工具与桥接指令。
   #
